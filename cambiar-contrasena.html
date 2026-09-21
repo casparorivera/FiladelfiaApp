@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+(function(){
+  try {
+    if (!localStorage.getItem('filadelfiaAppCorreo') || !localStorage.getItem('filadelfiaAppToken')) {
+      window.location.href = 'login.html';
+    }
+  } catch(e) {}
+})();
+</script>
+<title>Cambiar contraseña — App Filadelfia</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#123a68">
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(150deg,#0b2035,#123a68 60%,#1a3d5c);
+    padding:24px 16px;
+  }
+  .tarjeta{
+    width:100%;
+    max-width:380px;
+    background:#fff;
+    border-radius:18px;
+    padding:30px 28px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  h1{margin:0 0 6px;font-size:21px;color:#123a68;text-align:center}
+  .subtitulo{margin:0 0 20px;font-size:13px;color:#5a6b80;text-align:center}
+
+  label{display:block;font-size:13px;font-weight:700;color:#26364a;margin:14px 0 6px}
+  input{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;font-family:inherit}
+  input:focus{outline:2px solid #2f6fc0;border-color:#2f6fc0}
+
+  button{
+    width:100%;margin-top:20px;padding:13px;border:none;border-radius:10px;
+    background:#2f6fc0;color:#fff;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  button:disabled{opacity:.6;cursor:not-allowed}
+
+  .estado{margin-top:14px;font-size:13.5px;padding:10px;border-radius:8px;display:none;white-space:pre-wrap}
+  .estado.error{display:block;background:#fdecec;color:#9b1c1c}
+  .estado.exito{display:block;background:#e8f5e9;color:#2e7d32}
+  .estado.info{display:block;background:#eef2f7;color:#5a6b80}
+
+  .volver{display:block;text-align:center;margin-top:18px;font-size:13px;color:#2f6fc0;text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="tarjeta">
+  <h1>🔑 Cambiar contraseña</h1>
+  <p class="subtitulo">Escribe tu contraseña actual y la nueva que quieras usar.</p>
+
+  <form id="formClave" onsubmit="return false">
+    <label for="actual">Contraseña actual</label>
+    <input type="password" id="actual" autocomplete="current-password" required>
+
+    <label for="nueva">Contraseña nueva</label>
+    <input type="password" id="nueva" autocomplete="new-password" required minlength="6">
+
+    <label for="confirmar">Confirmar contraseña nueva</label>
+    <input type="password" id="confirmar" autocomplete="new-password" required minlength="6">
+
+    <button type="button" id="btnCambiar" onclick="cambiarContrasena()">Guardar contraseña nueva</button>
+  </form>
+
+  <div id="estado" class="estado"></div>
+
+  <a class="volver" href="index.html">← Volver al inicio</a>
+</div>
+
+<script>
+  // ⚠️ PENDIENTE: pega aquí la misma URL /exec del backend "Usuarios de la App".
+  const URL_AUTENTICACION = 'https://script.google.com/macros/s/AKfycbze9g2zuMkao6CzUk3iqwX8ERAtD7kj4wkb7jFYm8HwGCwRbJ51Cov1hU6O4v7eGTLR/exec';
+
+  function mostrarEstado(texto, tipo){
+    const e = document.getElementById('estado');
+    e.textContent = texto;
+    e.className = 'estado ' + tipo;
+  }
+
+  async function cambiarContrasena(){
+    const actual = document.getElementById('actual').value;
+    const nueva = document.getElementById('nueva').value;
+    const confirmar = document.getElementById('confirmar').value;
+
+    if (!actual || !nueva || !confirmar) return mostrarEstado('Completa los tres campos.', 'error');
+    if (nueva.length < 6) return mostrarEstado('La contraseña nueva debe tener al menos 6 caracteres.', 'error');
+    if (nueva !== confirmar) return mostrarEstado('La confirmación no coincide con la contraseña nueva.', 'error');
+
+    const correo = localStorage.getItem('filadelfiaAppCorreo');
+    const token = localStorage.getItem('filadelfiaAppToken');
+    if (!correo || !token) { window.location.href = 'login.html'; return; }
+
+    const boton = document.getElementById('btnCambiar');
+    boton.disabled = true;
+    mostrarEstado('Guardando...', 'info');
+
+    try{
+      const r = await fetch(URL_AUTENTICACION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ accion: 'cambiarContrasena', correo, token, contrasenaActual: actual, contrasenaNueva: nueva })
+      });
+      const datos = await r.json();
+
+      if (datos.error) { mostrarEstado(datos.error, 'error'); boton.disabled = false; return; }
+
+      try { localStorage.setItem('filadelfiaAppToken', datos.token); } catch(e) {}
+      mostrarEstado('✅ Contraseña actualizada correctamente.', 'exito');
+      document.getElementById('actual').value = '';
+      document.getElementById('nueva').value = '';
+      document.getElementById('confirmar').value = '';
+      boton.disabled = false;
+    } catch(e){
+      mostrarEstado('No se pudo conectar. Revisa tu conexión e intenta de nuevo.', 'error');
+      boton.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
