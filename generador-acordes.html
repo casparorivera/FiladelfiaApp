@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de Acordes | Ministerio de Alabanza Filadelfia Central</title>
+<link rel="stylesheet" href="recursos.css">
+<script src="https://cdn.jsdelivr.net/npm/tonal/browser/tonal.min.js"></script>
+<style>
+  main.container{ max-width:760px; }
+
+  .panel-acorde{
+    background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+    padding:26px 24px; box-shadow:0 6px 18px #0001; margin-bottom:22px;
+  }
+  .fila-entrada{ display:flex; gap:10px; }
+  #entradaAcorde{
+    flex:1; padding:14px 16px; border:1px solid #ccc; border-radius:10px;
+    font-size:22px; font-weight:700; text-align:center; letter-spacing:.5px;
+  }
+  #entradaAcorde:focus{ outline:2px solid #2f6fc0; border-color:#2f6fc0; }
+  .btn-analizar{
+    border:0; border-radius:10px; padding:0 22px; font-size:15px; font-weight:700;
+    background:#204f8c; color:#fff; cursor:pointer;
+  }
+
+  .ejemplos{ margin-top:12px; font-size:12.5px; color:#8a95a5; text-align:center; }
+  .ejemplos button{
+    border:none; background:none; color:#204f8c; font-weight:700; cursor:pointer;
+    text-decoration:underline; padding:0 2px; font-size:12.5px;
+  }
+
+  .resultado{ margin-top:26px; display:none; }
+  .resultado.activo{ display:block; }
+  .resultado .nombre-grande{ text-align:center; font-size:32px; font-weight:800; color:#123a68; margin-bottom:2px; }
+  .resultado .nombre-descriptivo{ text-align:center; font-size:14.5px; color:#5a6b80; margin-bottom:20px; text-transform:capitalize; }
+
+  .notas-fila{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:18px; }
+  .nota-pill{
+    background:linear-gradient(135deg,#204f8c,#123a68); color:#fff;
+    border-radius:12px; padding:12px 18px; font-size:19px; font-weight:800;
+    min-width:52px; text-align:center; box-shadow:0 4px 10px #0002;
+  }
+  .nota-pill.bajo{ background:linear-gradient(135deg,#198754,#0f5c38); }
+  .nota-pill small{ display:block; font-size:9.5px; font-weight:700; opacity:.85; margin-top:2px; letter-spacing:.4px; }
+
+  .error-box{
+    margin-top:20px; background:#fdecec; border:1px solid #f3c3c3; color:#9b1c1c;
+    border-radius:10px; padding:14px 16px; font-size:14px; text-align:center; display:none;
+  }
+  .error-box.activo{ display:block; }
+
+  .nota-proximo{
+    margin-top:26px; background:#eef6ff; border:1px solid #cfe3fb; border-radius:10px;
+    padding:13px 16px; font-size:12.5px; color:#3a5a80; text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html">
+    <img src="images/logo-filadelfia.jpg" alt="Logo Ministerio de Alabanza Filadelfia">
+    <div>
+      <small>MINISTERIO DE ALABANZA</small>
+      <b>FILADELFIA CENTRAL</b>
+    </div>
+  </a>
+
+  <button class="menu-toggle" type="button" onclick="toggleMenuMovil()" aria-label="Abrir menú">☰</button>
+<nav aria-label="Navegación principal">
+    <a href="index.html">Inicio</a>
+    <a href="edificacion.html">Edificación</a>
+    <a href="cronograma.html">Cronograma</a>
+    <a href="chat.html">Chat Interno</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <section class="intro">
+    <span class="eyebrow">MINISTERIO DE ALABANZA FILADELFIA CENTRAL</span>
+    <h1>Generador de Acordes</h1>
+    <p>Escribe cualquier acorde y descubre exactamente qué notas lo forman.</p>
+  </section>
+
+  <div class="panel-acorde">
+    <div class="fila-entrada">
+      <input type="text" id="entradaAcorde" placeholder="Ej: Cmaj7" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="btn-analizar" type="button" onclick="analizarYMostrar()">Analizar</button>
+    </div>
+    <div class="ejemplos">
+      Prueba:
+      <button type="button" onclick="probarEjemplo('Cmaj7')">Cmaj7</button>·
+      <button type="button" onclick="probarEjemplo('G/B')">G/B</button>·
+      <button type="button" onclick="probarEjemplo('Dm7')">Dm7</button>·
+      <button type="button" onclick="probarEjemplo('F#dim')">F#dim</button>·
+      <button type="button" onclick="probarEjemplo('Bbsus4')">Bbsus4</button>·
+      <button type="button" onclick="probarEjemplo('Am9')">Am9</button>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="resultado" id="resultado">
+      <div class="nombre-grande" id="nombreGrande"></div>
+      <div class="nombre-descriptivo" id="nombreDescriptivo"></div>
+      <div class="notas-fila" id="notasFila"></div>
+    </div>
+  </div>
+
+  <div class="nota-proximo">
+    🎹 🎸 Próximamente: ver cada acorde dibujado en piano y en guitarra, además del reconocedor al revés (elegir notas y que diga qué acorde forman).
+  </div>
+
+</main>
+
+<script>
+/* ===================== Motor de teoría musical (Tonal.js) ===================== */
+// Librería externa, de código abierto (licencia MIT), cargada desde CDN.
+// https://github.com/tonaljs/tonal
+
+const TRADUCCION_CALIDAD = {
+  'major': 'mayor',
+  'minor': 'menor',
+  'major seventh': 'mayor con séptima mayor',
+  'minor seventh': 'menor séptima',
+  'dominant seventh': 'séptima (dominante)',
+  'diminished': 'disminuido',
+  'diminished seventh': 'disminuido séptima',
+  'half-diminished': 'semidisminuido (m7b5)',
+  'augmented': 'aumentado',
+  'suspended fourth': 'suspendido en cuarta',
+  'suspended second': 'suspendido en segunda',
+  'major sixth': 'sexta',
+  'minor sixth': 'menor sexta',
+  'major ninth': 'novena mayor',
+  'minor ninth': 'menor novena',
+  'dominant ninth': 'novena (dominante)',
+  'added ninth': 'add9',
+  'sixth added ninth': 'sexta con novena',
+  'Major': 'mayor',
+  'Minor': 'menor',
+};
+
+function analizarAcorde(texto){
+  texto = String(texto||'').trim();
+  if(!texto) return { error: 'Escribe un acorde para analizarlo.' };
+
+  const c = Tonal.Chord.get(texto);
+  if(c.empty || !c.notes.length){
+    return { error: `No reconozco "${texto}". Prueba con algo como Cmaj7, Dm7, G7, F#dim, Bbsus4...` };
+  }
+
+  return {
+    ok: true,
+    raiz: c.tonic || c.notes[c.notes.length - 1],
+    nombreCalidad: TRADUCCION_CALIDAD[c.type] || c.type || c.quality,
+    notas: c.notes,
+    bajo: c.bass || null
+  };
+}
+
+/* ===================== Interfaz ===================== */
+
+function escHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function analizarYMostrar(){
+  const texto = document.getElementById('entradaAcorde').value;
+  const resultado = analizarAcorde(texto);
+
+  const cajaError = document.getElementById('errorBox');
+  const cajaResultado = document.getElementById('resultado');
+
+  if(resultado.error){
+    cajaError.textContent = resultado.error;
+    cajaError.classList.add('activo');
+    cajaResultado.classList.remove('activo');
+    return;
+  }
+
+  cajaError.classList.remove('activo');
+
+  document.getElementById('nombreGrande').textContent = texto.trim();
+  document.getElementById('nombreDescriptivo').textContent = resultado.raiz + ' ' + resultado.nombreCalidad + (resultado.bajo ? ' (bajo en ' + resultado.bajo + ')' : '');
+
+  const filaNotas = document.getElementById('notasFila');
+  filaNotas.innerHTML = resultado.notas.map((n) => {
+    const esBajo = resultado.bajo && n === resultado.bajo && n !== resultado.raiz;
+    const esFundamental = n === resultado.raiz && !esBajo;
+    return `<div class="nota-pill${esBajo ? ' bajo' : ''}">${escHtml(n)}<small>${esFundamental ? 'fundamental' : esBajo ? 'bajo' : ''}</small></div>`;
+  }).join('');
+
+  cajaResultado.classList.add('activo');
+}
+
+function probarEjemplo(texto){
+  document.getElementById('entradaAcorde').value = texto;
+  analizarYMostrar();
+}
+
+document.getElementById('entradaAcorde').addEventListener('keydown', ev => {
+  if(ev.key === 'Enter') analizarYMostrar();
+});
+
+function toggleMenuMovil(){
+  document.querySelector('.top nav').classList.toggle('nav-abierto');
+}
+</script>
+
+</body>
+</html>
