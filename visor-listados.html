@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de Listados | Ministerio de Alabanza Filadelfia Central</title>
+<link rel="stylesheet" href="recursos.css">
+<style>
+  main.container{ max-width:1200px; }
+
+  .buscador-panel{
+    background:#fff; border:1px solid #e2e8f0; border-radius:14px;
+    padding:20px 22px; margin-bottom:22px; box-shadow:0 6px 18px #0001;
+    position:relative;
+  }
+  .buscador-panel h2{ margin:0 0 4px; font-size:19px; color:#153862; }
+  .buscador-panel p.ayuda{ margin:0 0 14px; font-size:13px; color:#5a6b80; }
+  #searchInput{
+    width:100%; padding:12px 14px; border:1px solid #ccc; border-radius:8px; font-size:15px;
+  }
+  #searchStatus{ font-size:11.5px; color:#8a95a5; margin-top:6px; min-height:14px; }
+  #searchResults{
+    margin-top:10px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;
+    max-height:340px; overflow-y:auto; display:none;
+  }
+  .grupo-titulo{
+    padding:7px 14px; font-size:10.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+    color:#8a95a5; background:#f7f8fa; border-bottom:1px solid #e2e8f0;
+  }
+  .resultado-item{
+    padding:10px 14px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center;
+    justify-content:space-between; gap:10px;
+  }
+  .resultado-item:last-child{ border-bottom:none; }
+  .resultado-item .titulo{ font-size:13.5px; color:#26364a; flex:1; }
+  .resultado-item .botones-enviar{ display:flex; gap:5px; flex:none; }
+  .resultado-item .botones-enviar button{
+    border:1px solid #204f8c; background:#eaf2f8; color:#204f8c; border-radius:14px;
+    font-size:11px; font-weight:700; padding:4px 9px; cursor:pointer;
+  }
+  .resultado-item .botones-enviar button:hover{ background:#204f8c; color:#fff; }
+
+  .listados-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
+  .listado-panel{
+    background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px 18px 20px;
+    box-shadow:0 6px 18px #0001; display:flex; flex-direction:column;
+  }
+  .listado-panel h3{ margin:0 0 3px; font-size:16px; color:#153862; }
+  .listado-panel .contador{ font-size:11.5px; color:#8a95a5; margin-bottom:10px; }
+  .listado-items{ display:flex; flex-direction:column; gap:7px; min-height:40px; margin-bottom:12px; }
+  .listado-vacio{ font-size:12.5px; color:#8a95a5; text-align:center; padding:14px 0; }
+  .listado-item{
+    display:flex; align-items:center; gap:6px; border:1px solid #e2e8f0; border-radius:8px;
+    padding:7px 9px; font-size:12.5px; background:#f9fafb;
+  }
+  .listado-item .num{ font-weight:700; color:#204f8c; flex:none; width:18px; }
+  .listado-item .titulo-item{ flex:1; color:#26364a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .listado-item .etiqueta-tipo{
+    flex:none; font-size:9.5px; font-weight:700; padding:2px 6px; border-radius:10px;
+    background:#e2e8f0; color:#5a6b80; text-transform:uppercase;
+  }
+  .listado-item .acciones-item{ display:flex; gap:2px; flex:none; }
+  .listado-item .acciones-item button{
+    border:none; background:none; cursor:pointer; font-size:13px; color:#8a95a5; padding:2px 4px;
+  }
+  .listado-item .acciones-item button:hover{ color:#204f8c; }
+  .listado-item .acciones-item button.quitar:hover{ color:#b42318; }
+
+  .btn-generar-visor{
+    border:0; border-radius:10px; padding:11px; font-size:13.5px; font-weight:700;
+    background:#198754; color:#fff; cursor:pointer; margin-top:auto;
+  }
+  .btn-generar-visor:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-limpiar-listado{
+    border:0; background:none; color:#8a95a5; font-size:11.5px; cursor:pointer;
+    text-decoration:underline; margin-top:6px; align-self:center;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="index.html">
+    <img src="images/logo-filadelfia.jpg" alt="Logo Ministerio de Alabanza Filadelfia">
+    <div>
+      <small>MINISTERIO DE ALABANZA</small>
+      <b>FILADELFIA CENTRAL</b>
+    </div>
+  </a>
+
+  <button class="menu-toggle" type="button" onclick="toggleMenuMovil()" aria-label="Abrir menú">☰</button>
+<nav aria-label="Navegación principal">
+    <a href="index.html">Inicio</a>
+    <a href="edificacion.html">Edificación</a>
+    <a href="cronograma.html">Cronograma</a>
+    <a href="chat.html">Chat Interno</a>
+  </nav>
+</header>
+
+<main class="container">
+
+  <section class="intro">
+    <span class="eyebrow">MINISTERIO DE ALABANZA FILADELFIA CENTRAL</span>
+    <h1>Generador de Listados</h1>
+    <p>Busca canciones del repositorio y arma hasta 3 listados — el visor final las muestra en orden, tomando cada una de Cifra Pro o del PDF, según dónde esté disponible.</p>
+  </section>
+
+  <div class="buscador-panel">
+    <h2>🔎 Canciones en los repositorios</h2>
+    <p class="ayuda">Busca por nombre — se consulta tanto Cifra Pro como los PDF del repositorio.</p>
+    <input type="text" id="searchInput" placeholder="Buscar canción…" autocomplete="off">
+    <div id="searchStatus"></div>
+    <div id="searchResults"></div>
+  </div>
+
+  <div class="listados-grid" id="listadosGrid"></div>
+
+</main>
+
+<script>
+// ⚠️ Misma URL del backend de Cifra Pro que ya usa el visor.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOuR6gO1Y69eTXWUwWR2PJqfZ454jZJmS-gywgE_gXVAHxPLjZBpukM-DwvaxVHc-t/exec';
+
+function escHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+/* ===================== Búsqueda (igual que el visor) ===================== */
+
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+const searchStatus = document.getElementById('searchStatus');
+let searchTimer = null;
+
+searchInput.addEventListener('input', () => {
+  const term = searchInput.value.trim();
+  clearTimeout(searchTimer);
+  if(!term){ searchResults.style.display = 'none'; searchStatus.textContent = ''; return; }
+  searchStatus.textContent = 'buscando…';
+  searchTimer = setTimeout(() => runSearch(term), 300);
+});
+
+async function runSearch(term){
+  searchStatus.textContent = 'buscando…';
+
+  const [proResultado, pdfResultado] = await Promise.allSettled([
+    fetch(`${APPS_SCRIPT_URL}?action=pro_search&q=${encodeURIComponent(term)}`).then(r => r.json()),
+    fetch(`${APPS_SCRIPT_URL}?action=search_originals&q=${encodeURIComponent(term)}`).then(r => r.json())
+  ]);
+
+  const proResultados = (proResultado.status === 'fulfilled' && !proResultado.value.error) ? (proResultado.value.results || []) : [];
+  const pdfResultados = (pdfResultado.status === 'fulfilled' && !pdfResultado.value.error) ? (pdfResultado.value.results || []) : [];
+
+  if(proResultado.status === 'rejected' && pdfResultado.status === 'rejected'){
+    searchStatus.textContent = 'no se pudo conectar con el backend';
+    searchResults.style.display = 'none';
+    return;
+  }
+  if(!proResultados.length && !pdfResultados.length){
+    searchStatus.textContent = 'sin resultados';
+    searchResults.style.display = 'none';
+    return;
+  }
+
+  searchStatus.textContent = `${proResultados.length + pdfResultados.length} resultado(s)`;
+  searchResults.innerHTML = '';
+
+  if(proResultados.length){
+    const titulo = document.createElement('div');
+    titulo.className = 'grupo-titulo';
+    titulo.textContent = `Cifra Pro (${proResultados.length})`;
+    searchResults.appendChild(titulo);
+
+    proResultados.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'resultado-item';
+      item.innerHTML = `
+        <span class="titulo">${escHtml(r.title)}${r.key ? ' — ' + escHtml(r.key) : ''}</span>
+        <span class="botones-enviar">
+          <button type="button" onclick='enviarAListado(1, ${JSON.stringify({tipo:'pro', id:r.id, titulo:r.title})})'>→ 1</button>
+          <button type="button" onclick='enviarAListado(2, ${JSON.stringify({tipo:'pro', id:r.id, titulo:r.title})})'>→ 2</button>
+          <button type="button" onclick='enviarAListado(3, ${JSON.stringify({tipo:'pro', id:r.id, titulo:r.title})})'>→ 3</button>
+        </span>`;
+      searchResults.appendChild(item);
+    });
+  }
+
+  if(pdfResultados.length){
+    const titulo = document.createElement('div');
+    titulo.className = 'grupo-titulo';
+    titulo.textContent = `Repositorio — PDF (${pdfResultados.length})`;
+    searchResults.appendChild(titulo);
+
+    pdfResultados.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'resultado-item';
+      item.innerHTML = `
+        <span class="titulo">${escHtml(r.title)}</span>
+        <span class="botones-enviar">
+          <button type="button" onclick='enviarAListado(1, ${JSON.stringify({tipo:'pdf', url:r.viewUrl, titulo:r.title})})'>→ 1</button>
+          <button type="button" onclick='enviarAListado(2, ${JSON.stringify({tipo:'pdf', url:r.viewUrl, titulo:r.title})})'>→ 2</button>
+          <button type="button" onclick='enviarAListado(3, ${JSON.stringify({tipo:'pdf', url:r.viewUrl, titulo:r.title})})'>→ 3</button>
+        </span>`;
+      searchResults.appendChild(item);
+    });
+  }
+
+  searchResults.style.display = 'block';
+}
+
+/* ===================== Los 3 listados ===================== */
+
+const NUM_LISTADOS = 3;
+let listados = [[], [], []];
+
+function cargarListadosGuardados(){
+  try{
+    const guardado = JSON.parse(localStorage.getItem('generadorListados') || 'null');
+    if(Array.isArray(guardado) && guardado.length === NUM_LISTADOS) listados = guardado;
+  }catch(e){}
+}
+
+function guardarListados(){
+  localStorage.setItem('generadorListados', JSON.stringify(listados));
+}
+
+function enviarAListado(numero, cancion){
+  listados[numero - 1].push(cancion);
+  guardarListados();
+  renderListados();
+}
+
+function moverItem(numero, indice, direccion){
+  const lista = listados[numero - 1];
+  const nuevo = indice + direccion;
+  if(nuevo < 0 || nuevo >= lista.length) return;
+  [lista[indice], lista[nuevo]] = [lista[nuevo], lista[indice]];
+  guardarListados();
+  renderListados();
+}
+
+function quitarItem(numero, indice){
+  listados[numero - 1].splice(indice, 1);
+  guardarListados();
+  renderListados();
+}
+
+function limpiarListado(numero){
+  if(!confirm('¿Vaciar por completo el Listado ' + numero + '?')) return;
+  listados[numero - 1] = [];
+  guardarListados();
+  renderListados();
+}
+
+function generarVisor(numero){
+  const lista = listados[numero - 1];
+  if(!lista.length) return;
+  localStorage.setItem('visorListadoActual', JSON.stringify(lista));
+  window.open('visor-cifrados.html?modoLista=1', '_blank', 'noopener');
+}
+
+function renderListados(){
+  const grid = document.getElementById('listadosGrid');
+  grid.innerHTML = listados.map((lista, idx) => {
+    const numero = idx + 1;
+    return `
+      <div class="listado-panel">
+        <h3>📋 Listado ${numero}</h3>
+        <div class="contador">${lista.length} canción(es)</div>
+        <div class="listado-items">
+          ${lista.length ? lista.map((c, i) => `
+            <div class="listado-item">
+              <span class="num">${i + 1}.</span>
+              <span class="titulo-item">${escHtml(c.titulo)}</span>
+              <span class="etiqueta-tipo">${c.tipo === 'pdf' ? 'PDF' : 'Cifra'}</span>
+              <span class="acciones-item">
+                <button type="button" onclick="moverItem(${numero}, ${i}, -1)" title="Subir">↑</button>
+                <button type="button" onclick="moverItem(${numero}, ${i}, 1)" title="Bajar">↓</button>
+                <button type="button" class="quitar" onclick="quitarItem(${numero}, ${i})" title="Quitar">✕</button>
+              </span>
+            </div>`).join('') : '<div class="listado-vacio">Todavía no has agregado canciones aquí.</div>'}
+        </div>
+        <button class="btn-generar-visor" type="button" ${lista.length ? '' : 'disabled'} onclick="generarVisor(${numero})">🎬 Generar visor</button>
+        ${lista.length ? `<button class="btn-limpiar-listado" type="button" onclick="limpiarListado(${numero})">Vaciar listado</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function toggleMenuMovil(){
+  document.querySelector('.top nav').classList.toggle('nav-abierto');
+}
+
+cargarListadosGuardados();
+renderListados();
+</script>
+
+</body>
+</html>
