@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batería Virtual - Filadelfia</title>
+<style>
+  :root{
+    --fondo-1:#1c1f26;
+    --fondo-2:#0c0e12;
+    --acento:#3fa9f5;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    margin:0;
+    height:100%;
+    background:linear-gradient(160deg, var(--fondo-1), var(--fondo-2));
+    font-family:'Segoe UI', Arial, sans-serif;
+    color:#eef2f5;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  .encabezado{
+    text-align:center;
+    padding:18px 16px 6px;
+  }
+  .encabezado h1{
+    font-size:19px;
+    margin:0 0 2px;
+    letter-spacing:0.5px;
+  }
+  .encabezado p{
+    margin:0;
+    font-size:12.5px;
+    color:#9aa6b2;
+  }
+
+  .zona-activar{
+    display:flex;
+    justify-content:center;
+    padding:10px 16px 4px;
+  }
+  .btn-activar-audio{
+    background:linear-gradient(135deg,#3fa9f5,#1c6fb5);
+    color:#fff;
+    border:none;
+    padding:10px 22px;
+    border-radius:24px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:0 6px 14px rgba(63,169,245,0.35);
+  }
+  .btn-activar-audio[disabled]{
+    opacity:0.5;
+    cursor:default;
+  }
+
+  .rejilla-pads{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:12px;
+    padding:16px;
+    max-width:640px;
+    margin:0 auto;
+  }
+  @media (min-width:480px){
+    .rejilla-pads{ grid-template-columns:repeat(3, 1fr); }
+  }
+  @media (min-width:640px){
+    .rejilla-pads{ grid-template-columns:repeat(5, 1fr); }
+  }
+
+  .pad{
+    position:relative;
+    border-radius:16px;
+    padding:0;
+    height:105px;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    color:#fff;
+    font-family:inherit;
+    box-shadow:0 6px 14px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15);
+    transition:transform .05s;
+    overflow:hidden;
+  }
+  .pad .icono{ font-size:28px; }
+  .pad .nombre{ font-size:12px; font-weight:700; letter-spacing:0.3px; text-align:center; padding:0 4px; }
+  .pad .tecla{
+    position:absolute;
+    top:6px; right:8px;
+    font-size:10px;
+    color:rgba(255,255,255,0.6);
+    font-family:'Courier New', monospace;
+  }
+  .pad.tocando{
+    transform:scale(0.94);
+    filter:brightness(1.5);
+  }
+  .pad::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:rgba(255,255,255,0);
+    transition:background .12s;
+    pointer-events:none;
+  }
+  .pad.tocando::after{
+    background:rgba(255,255,255,0.25);
+  }
+
+  .pad-kick{ background:linear-gradient(150deg,#c0392b,#6e1c12); }
+  .pad-snare{ background:linear-gradient(150deg,#e2b93b,#8a6a10); }
+  .pad-hat-cerrado{ background:linear-gradient(150deg,#5aa9e6,#1c4a75); }
+  .pad-hat-abierto{ background:linear-gradient(150deg,#7fd1c2,#1f6e5f); }
+  .pad-tom-alto{ background:linear-gradient(150deg,#a06fe0,#4a2a80); }
+  .pad-tom-medio{ background:linear-gradient(150deg,#e08a4f,#8a4110); }
+  .pad-tom-piso{ background:linear-gradient(150deg,#7a5a3a,#3a2a18); }
+  .pad-crash1{ background:linear-gradient(150deg,#f4d03f,#a17f0a); }
+  .pad-crash2{ background:linear-gradient(150deg,#f7dc6f,#8a6a10); }
+  .pad-ride{ background:linear-gradient(150deg,#58d68d,#1a7a45); }
+
+  .pie{
+    text-align:center;
+    color:#7c8896;
+    font-size:11px;
+    padding:10px 16px 30px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+  <div class="encabezado">
+    <h1>🥁 Batería Virtual</h1>
+    <p>Toca los pads con el dedo — sonidos propios de la batería del ministerio</p>
+  </div>
+
+  <div class="zona-activar">
+    <button class="btn-activar-audio" id="btnActivarAudio">🔊 Activar sonido</button>
+  </div>
+
+  <div class="rejilla-pads" id="rejillaPads">
+    <button class="pad pad-kick" data-sonido="kick" data-tecla="A">
+      <span class="tecla">A</span>
+      <span class="icono">🦶</span>
+      <span class="nombre">Bombo</span>
+    </button>
+    <button class="pad pad-snare" data-sonido="snare" data-tecla="S">
+      <span class="tecla">S</span>
+      <span class="icono">🥁</span>
+      <span class="nombre">Redoblante</span>
+    </button>
+    <button class="pad pad-hat-cerrado" data-sonido="hat-cerrado" data-tecla="D">
+      <span class="tecla">D</span>
+      <span class="icono">🔘</span>
+      <span class="nombre">Hi-Hat cerrado</span>
+    </button>
+    <button class="pad pad-hat-abierto" data-sonido="hat-abierto" data-tecla="F">
+      <span class="tecla">F</span>
+      <span class="icono">⭕</span>
+      <span class="nombre">Hi-Hat abierto</span>
+    </button>
+    <button class="pad pad-tom-alto" data-sonido="tom-alto" data-tecla="G">
+      <span class="tecla">G</span>
+      <span class="icono">🔺</span>
+      <span class="nombre">Tom alto</span>
+    </button>
+    <button class="pad pad-tom-medio" data-sonido="tom-medio" data-tecla="H">
+      <span class="tecla">H</span>
+      <span class="icono">⬜</span>
+      <span class="nombre">Tom medio</span>
+    </button>
+    <button class="pad pad-tom-piso" data-sonido="tom-piso" data-tecla="J">
+      <span class="tecla">J</span>
+      <span class="icono">⬛</span>
+      <span class="nombre">Tom de piso</span>
+    </button>
+    <button class="pad pad-crash1" data-sonido="crash1" data-tecla="K">
+      <span class="tecla">K</span>
+      <span class="icono">💥</span>
+      <span class="nombre">Crash 1</span>
+    </button>
+    <button class="pad pad-crash2" data-sonido="crash2" data-tecla="L">
+      <span class="tecla">L</span>
+      <span class="icono">✨</span>
+      <span class="nombre">Crash 2</span>
+    </button>
+    <button class="pad pad-ride" data-sonido="ride" data-tecla=";">
+      <span class="tecla">Ñ</span>
+      <span class="icono">🔵</span>
+      <span class="nombre">Ride</span>
+    </button>
+  </div>
+
+  <p class="pie">
+    Tip: en computador también puedes tocar con el teclado (A S D F G H J K L Ñ).<br>
+    Sonidos propios de la batería del Ministerio de Alabanza Filadelfia.
+  </p>
+
+<script>
+  const ARCHIVOS = {
+    'kick':        'audio-bateria/Bombo.wav',
+    'snare':       'audio-bateria/Snare.wav',
+    'hat-cerrado': 'audio-bateria/Hi_Hat_Cerrado.wav',
+    'hat-abierto': 'audio-bateria/Hi_Hat_Abierto.wav',
+    'tom-alto':    'audio-bateria/Tom_alto.wav',
+    'tom-medio':   'audio-bateria/Tom_Medio.wav',
+    'tom-piso':    'audio-bateria/Tom_piso.wav',
+    'crash1':      'audio-bateria/Cymbal_1.wav',
+    'crash2':      'audio-bateria/Cymbal_2.wav',
+    'ride':        'audio-bateria/Ride.wav'
+  };
+
+  let audioCtx = null;
+  let buffers = {};
+  let audioListo = false;
+
+  const btnActivarAudio = document.getElementById('btnActivarAudio');
+  const pads = Array.from(document.querySelectorAll('.pad'));
+
+  async function cargarSonidos(){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const entradas = Object.entries(ARCHIVOS);
+    await Promise.all(entradas.map(async ([clave, ruta]) => {
+      const resp = await fetch(ruta);
+      const arrayBuffer = await resp.arrayBuffer();
+      buffers[clave] = await audioCtx.decodeAudioData(arrayBuffer);
+    }));
+
+    audioListo = true;
+    btnActivarAudio.textContent = '✅ Sonido activado';
+    btnActivarAudio.disabled = true;
+  }
+
+  function reproducirSonido(nombreSonido){
+    if(!audioListo) return;
+    const buffer = buffers[nombreSonido];
+    if(!buffer) return;
+
+    const fuente = audioCtx.createBufferSource();
+    fuente.buffer = buffer;
+
+    const ganancia = audioCtx.createGain();
+    ganancia.gain.value = 0.95;
+
+    fuente.connect(ganancia);
+    ganancia.connect(audioCtx.destination);
+    fuente.start(0);
+  }
+
+  function destacarPad(pad){
+    pad.classList.add('tocando');
+    setTimeout(() => pad.classList.remove('tocando'), 110);
+  }
+
+  function tocarPad(pad){
+    if(!audioListo){
+      cargarSonidos();
+      return;
+    }
+    const nombreSonido = pad.dataset.sonido;
+    reproducirSonido(nombreSonido);
+    destacarPad(pad);
+  }
+
+  pads.forEach(pad => {
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      tocarPad(pad);
+    });
+  });
+
+  btnActivarAudio.addEventListener('click', cargarSonidos);
+
+  // Soporte de teclado (A S D F G H J K L Ñ)
+  const MAPA_TECLAS = {};
+  pads.forEach(pad => {
+    const tecla = (pad.dataset.tecla || '').toLowerCase();
+    if(tecla) MAPA_TECLAS[tecla] = pad;
+  });
+
+  const teclasPresionadas = new Set();
+  document.addEventListener('keydown', (e) => {
+    const tecla = e.key.toLowerCase();
+    if(teclasPresionadas.has(tecla)) return;
+    const pad = MAPA_TECLAS[tecla];
+    if(pad){
+      teclasPresionadas.add(tecla);
+      tocarPad(pad);
+    }
+  });
+  document.addEventListener('keyup', (e) => {
+    teclasPresionadas.delete(e.key.toLowerCase());
+  });
+</script>
+
+</body>
+</html>
