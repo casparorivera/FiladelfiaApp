@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Afinador Cromático - Filadelfia</title>
+<style>
+  :root{
+    --carcasa-1:#2f6b3a;
+    --carcasa-2:#1c3e22;
+    --panel:#173018;
+    --led-rojo:#ff2b2b;
+    --led-rojo-apagado:#3a1010;
+    --led-verde:#39ff6a;
+    --led-verde-apagado:#123018;
+    --led-ambar:#ffb020;
+    --led-ambar-apagado:#3a2a08;
+    --tornillo:#8d9a8f;
+    --texto-claro:#e9f5ea;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(ellipse at center, #2a2a2a 0%, #0d0d0d 100%);
+    font-family:'Segoe UI', Arial, sans-serif;
+    padding:20px;
+  }
+
+  .pedal{
+    width:100%;
+    max-width:380px;
+    background:
+      linear-gradient(160deg, var(--carcasa-1) 0%, var(--carcasa-2) 55%, #142918 100%);
+    border-radius:22px;
+    padding:22px 20px 28px;
+    box-shadow:
+      0 20px 45px rgba(0,0,0,0.55),
+      inset 0 2px 3px rgba(255,255,255,0.15),
+      inset 0 -6px 12px rgba(0,0,0,0.4);
+    position:relative;
+    border:1px solid #0e1f10;
+  }
+
+  .tornillo{
+    position:absolute;
+    width:11px;height:11px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #cfd6cf, var(--tornillo) 60%, #4a524b);
+    box-shadow:0 1px 2px rgba(0,0,0,0.6);
+  }
+  .tornillo::after{
+    content:"";
+    position:absolute;
+    top:50%;left:15%;
+    width:70%;height:1.5px;
+    background:#5b645c;
+    transform:translateY(-50%) rotate(35deg);
+  }
+  .tornillo.tl{top:12px;left:12px;}
+  .tornillo.tr{top:12px;right:12px;}
+  .tornillo.bl{bottom:12px;left:12px;}
+  .tornillo.br{bottom:12px;right:12px;}
+
+  .marca-pedal{
+    text-align:center;
+    color:#dff2e0;
+    font-weight:700;
+    letter-spacing:3px;
+    font-size:13px;
+    text-shadow:0 1px 1px rgba(0,0,0,0.5);
+    margin-bottom:2px;
+  }
+  .subtitulo-pedal{
+    text-align:center;
+    color:#a9c9ab;
+    font-size:10px;
+    letter-spacing:2px;
+    margin-bottom:14px;
+  }
+
+  .pantalla{
+    background:linear-gradient(180deg,#0a1a0b,#050d05);
+    border-radius:12px;
+    padding:14px 12px 10px;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,0.8), inset 0 0 0 2px #05130a;
+    position:relative;
+  }
+
+  /* Medidor curvo tipo LED */
+  .medidor-svg{
+    width:100%;
+    display:block;
+    overflow:visible;
+  }
+  .marca-escala{
+    fill:#6f9a74;
+    font-size:9px;
+    font-family:'Courier New', monospace;
+  }
+
+  /* Nota grande estilo 7 segmentos */
+  .zona-nota{
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    gap:6px;
+    margin-top:2px;
+  }
+  .nota-grande{
+    font-family:'Courier New', monospace;
+    font-weight:700;
+    font-size:56px;
+    letter-spacing:2px;
+    color:var(--led-rojo-apagado);
+    text-shadow:none;
+    transition:color .12s, text-shadow .12s;
+    min-width:1.4em;
+    text-align:center;
+  }
+  .nota-grande.activa{
+    color:var(--led-rojo);
+    text-shadow:0 0 8px rgba(255,43,43,0.85), 0 0 18px rgba(255,43,43,0.5);
+  }
+  .octava-chica{
+    font-family:'Courier New', monospace;
+    font-size:18px;
+    font-weight:700;
+    color:var(--led-rojo-apagado);
+    align-self:flex-end;
+    margin-bottom:8px;
+    transition:color .12s;
+  }
+  .octava-chica.activa{
+    color:#ff6b6b;
+    text-shadow:0 0 6px rgba(255,43,43,0.7);
+  }
+
+  .fila-inferior{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+    padding:0 4px;
+  }
+  .frecuencia{
+    font-family:'Courier New', monospace;
+    font-size:12px;
+    color:#5fae66;
+  }
+  .indicador-check{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .luz-check{
+    width:11px;height:11px;
+    border-radius:50%;
+    background:var(--led-verde-apagado);
+    box-shadow:inset 0 0 2px rgba(0,0,0,0.6);
+    transition:background .1s, box-shadow .1s;
+  }
+  .luz-check.on{
+    background:var(--led-verde);
+    box-shadow:0 0 8px rgba(57,255,106,0.9), 0 0 16px rgba(57,255,106,0.5);
+  }
+  .texto-check{
+    font-family:'Courier New', monospace;
+    font-size:10px;
+    letter-spacing:1px;
+    color:#5fae66;
+  }
+
+  .etiqueta-estado{
+    text-align:center;
+    font-family:'Courier New', monospace;
+    font-size:11px;
+    color:#7fbf85;
+    min-height:16px;
+    margin-top:8px;
+    letter-spacing:1px;
+  }
+
+  /* Controles */
+  .controles-pedal{
+    margin-top:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+
+  .boton-pedal{
+    -webkit-appearance:none;
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 35% 30%, #eef2ee, #b9c4ba 40%, #7b8a7c 70%, #4a544b 100%);
+    box-shadow:
+      0 10px 18px rgba(0,0,0,0.55),
+      inset 0 3px 4px rgba(255,255,255,0.6),
+      inset 0 -8px 14px rgba(0,0,0,0.35);
+    position:relative;
+    transition:transform .06s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Courier New', monospace;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:1px;
+    color:#243325;
+    text-align:center;
+    padding:8px;
+  }
+  .boton-pedal:active{
+    transform:translateY(2px);
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.5),
+      inset 0 3px 4px rgba(255,255,255,0.5),
+      inset 0 -4px 8px rgba(0,0,0,0.3);
+  }
+  .boton-pedal.encendido{
+    background:
+      radial-gradient(circle at 35% 30%, #d9fbe0, #7fe89a 40%, #2fae55 70%, #146b30 100%);
+    color:#0d3318;
+  }
+
+  .aviso-mic{
+    text-align:center;
+    color:#a9c9ab;
+    font-size:11px;
+    max-width:260px;
+    line-height:1.4;
+  }
+
+  .pie-marca{
+    text-align:center;
+    margin-top:16px;
+    color:#4d6b50;
+    font-size:9px;
+    letter-spacing:2px;
+  }
+
+  @media (max-width:400px){
+    .nota-grande{font-size:46px;}
+    .boton-pedal{width:100px;height:100px;font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="pedal">
+  <div class="tornillo tl"></div>
+  <div class="tornillo tr"></div>
+  <div class="tornillo bl"></div>
+  <div class="tornillo br"></div>
+
+  <div class="marca-pedal">AFINADOR CROMÁTICO</div>
+  <div class="subtitulo-pedal">MINISTERIO DE ALABANZA FILADELFIA</div>
+
+  <div class="pantalla">
+    <svg class="medidor-svg" id="medidorSvg" viewBox="0 0 300 170"></svg>
+
+    <div class="zona-nota">
+      <div class="nota-grande" id="notaGrande">–</div>
+      <div class="octava-chica" id="octavaChica"></div>
+    </div>
+
+    <div class="fila-inferior">
+      <div class="frecuencia" id="frecuenciaTexto">0.0 Hz</div>
+      <div class="indicador-check">
+        <div class="luz-check" id="luzCheck"></div>
+        <div class="texto-check">CHECK</div>
+      </div>
+    </div>
+
+    <div class="etiqueta-estado" id="etiquetaEstado">ESPERANDO SEÑAL...</div>
+  </div>
+
+  <div class="controles-pedal">
+    <button class="boton-pedal" id="btnActivar" onclick="alternarMicrofono()">🎤<br>ACTIVAR</button>
+    <div class="aviso-mic">Te va a pedir permiso del micrófono la primera vez que lo actives.</div>
+  </div>
+
+  <div class="pie-marca">MODO · CROMÁTICO</div>
+</div>
+
+<script type="module">
+  import { PitchDetector } from "https://cdn.jsdelivr.net/npm/pitchy@4/+esm";
+
+  const NOTAS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const FFT_SIZE = 4096;
+
+  let audioCtx = null;
+  let analyser = null;
+  let detector = null;
+  let stream = null;
+  let bufferEntrada = null;
+  let animId = null;
+  let activo = false;
+
+  const btnActivar = document.getElementById('btnActivar');
+  const notaGrande = document.getElementById('notaGrande');
+  const octavaChica = document.getElementById('octavaChica');
+  const frecuenciaTexto = document.getElementById('frecuenciaTexto');
+  const etiquetaEstado = document.getElementById('etiquetaEstado');
+  const luzCheck = document.getElementById('luzCheck');
+  const medidorSvg = document.getElementById('medidorSvg');
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const CX = 150, CY = 150, R_EXTERIOR = 120, R_INTERIOR = 96;
+  const ANGULO_MIN = -60, ANGULO_MAX = 60; // grados, 0 = arriba (12 en punto)
+  const N_LEDS = 25; // cantidad de "led" en la franja curva
+
+  let elementosLed = [];
+  let agujaLinea = null;
+
+  function polarAPunto(cx, cy, radio, anguloGrados){
+    const rad = (anguloGrados - 90) * Math.PI / 180;
+    return { x: cx + radio * Math.cos(rad), y: cy + radio * Math.sin(rad) };
+  }
+
+  function dibujarMedidorBase(){
+    medidorSvg.innerHTML = '';
+    elementosLed = [];
+
+    // Marcas de escala: -50, -25, 0, +25, +50
+    const marcas = [
+      { val:-50, texto:'-50' },
+      { val:-25, texto:'' },
+      { val:0,   texto:'0' },
+      { val:25,  texto:'' },
+      { val:50,  texto:'+50' }
+    ];
+    marcas.forEach(m => {
+      const angulo = ANGULO_MIN + (m.val + 50) / 100 * (ANGULO_MAX - ANGULO_MIN);
+      const pInt = polarAPunto(CX, CY, R_INTERIOR - 6, angulo);
+      const pExt = polarAPunto(CX, CY, R_EXTERIOR + 8, angulo);
+      const linea = document.createElementNS(NS, 'line');
+      linea.setAttribute('x1', pInt.x); linea.setAttribute('y1', pInt.y);
+      linea.setAttribute('x2', pExt.x); linea.setAttribute('y2', pExt.y);
+      linea.setAttribute('stroke', '#3d5c40');
+      linea.setAttribute('stroke-width', '1');
+      medidorSvg.appendChild(linea);
+
+      if(m.texto){
+        const pTexto = polarAPunto(CX, CY, R_EXTERIOR + 20, angulo);
+        const texto = document.createElementNS(NS, 'text');
+        texto.setAttribute('x', pTexto.x);
+        texto.setAttribute('y', pTexto.y);
+        texto.setAttribute('text-anchor', 'middle');
+        texto.setAttribute('class', 'marca-escala');
+        texto.textContent = m.texto;
+        medidorSvg.appendChild(texto);
+      }
+    });
+
+    // Franja curva de "LEDs" (segmentos tipo arco)
+    for(let i = 0; i < N_LEDS; i++){
+      const t = i / (N_LEDS - 1); // 0..1
+      const angulo = ANGULO_MIN + t * (ANGULO_MAX - ANGULO_MIN);
+      const valorCents = -50 + t * 100;
+
+      const pA = polarAPunto(CX, CY, R_INTERIOR, angulo - 1.6);
+      const pB = polarAPunto(CX, CY, R_EXTERIOR, angulo - 1.6);
+      const pC = polarAPunto(CX, CY, R_EXTERIOR, angulo + 1.6);
+      const pD = polarAPunto(CX, CY, R_INTERIOR, angulo + 1.6);
+
+      const seg = document.createElementNS(NS, 'path');
+      seg.setAttribute('d', `M${pA.x},${pA.y} L${pB.x},${pB.y} L${pC.x},${pC.y} L${pD.x},${pD.y} Z`);
+
+      let colorApagado = '#274a2b';
+      if(Math.abs(valorCents) <= 4) colorApagado = '#1d3d24';
+      seg.setAttribute('fill', colorApagado);
+      seg.dataset.cents = valorCents.toFixed(1);
+      medidorSvg.appendChild(seg);
+      elementosLed.push(seg);
+    }
+
+    // Aguja central (referencia 0)
+    const pAgujaBase = polarAPunto(CX, CY, R_INTERIOR - 10, 0);
+    const marcaCero = document.createElementNS(NS, 'line');
+    const p1 = polarAPunto(CX, CY, R_INTERIOR - 12, 0);
+    const p2 = polarAPunto(CX, CY, R_EXTERIOR + 12, 0);
+    marcaCero.setAttribute('x1', p1.x); marcaCero.setAttribute('y1', p1.y);
+    marcaCero.setAttribute('x2', p2.x); marcaCero.setAttribute('y2', p2.y);
+    marcaCero.setAttribute('stroke', '#7fbf85');
+    marcaCero.setAttribute('stroke-width', '1.5');
+    medidorSvg.appendChild(marcaCero);
+  }
+
+  function moverMedidor(cents){
+    const centsAcotado = Math.max(-50, Math.min(50, cents));
+    elementosLed.forEach(seg => {
+      const valorLed = parseFloat(seg.dataset.cents);
+      let encender = false;
+
+      if(centsAcotado >= 0){
+        encender = valorLed >= -4 && valorLed <= centsAcotado + 0.001;
+      } else {
+        encender = valorLed <= 4 && valorLed >= centsAcotado - 0.001;
+      }
+
+      if(!encender){
+        let apagado = '#274a2b';
+        if(Math.abs(valorLed) <= 4) apagado = '#1d3d24';
+        seg.setAttribute('fill', apagado);
+        seg.style.filter = 'none';
+        return;
+      }
+
+      let color;
+      if(Math.abs(valorLed) <= 4){
+        color = '#39ff6a';
+      } else if(Math.abs(valorLed) <= 15){
+        color = '#ffb020';
+      } else {
+        color = '#ff2b2b';
+      }
+      seg.setAttribute('fill', color);
+      seg.style.filter = `drop-shadow(0 0 3px ${color})`;
+    });
+  }
+
+  function apagarMedidor(){
+    elementosLed.forEach(seg => {
+      const valorLed = parseFloat(seg.dataset.cents);
+      let apagado = '#274a2b';
+      if(Math.abs(valorLed) <= 4) apagado = '#1d3d24';
+      seg.setAttribute('fill', apagado);
+      seg.style.filter = 'none';
+    });
+  }
+
+  function frecuenciaANota(frecuencia){
+    const midi = 12 * Math.log2(frecuencia / 440) + 69;
+    const midiRedondeado = Math.round(midi);
+    const cents = Math.round((midi - midiRedondeado) * 100);
+    return {
+      nombre: NOTAS[((midiRedondeado % 12) + 12) % 12],
+      octava: Math.floor(midiRedondeado / 12) - 1,
+      cents
+    };
+  }
+
+  function actualizarColores(cents){
+    const enAfinacion = Math.abs(cents) <= 5;
+    const cercaAfinacion = Math.abs(cents) <= 15;
+
+    notaGrande.classList.add('activa');
+    octavaChica.classList.add('activa');
+
+    if(enAfinacion){
+      luzCheck.classList.add('on');
+      etiquetaEstado.textContent = '✅ AFINADO';
+      etiquetaEstado.style.color = '#39ff6a';
+    } else {
+      luzCheck.classList.remove('on');
+      if(cercaAfinacion){
+        etiquetaEstado.textContent = cents > 0 ? '⬆ UN POCO ALTO' : '⬇ UN POCO BAJO';
+        etiquetaEstado.style.color = '#ffb020';
+      } else {
+        etiquetaEstado.textContent = cents > 0 ? '⬆ MUY ALTO' : '⬇ MUY BAJO';
+        etiquetaEstado.style.color = '#ff5b5b';
+      }
+    }
+  }
+
+  function limpiarPantalla(){
+    notaGrande.textContent = '–';
+    notaGrande.classList.remove('activa');
+    octavaChica.textContent = '';
+    octavaChica.classList.remove('activa');
+    frecuenciaTexto.textContent = '0.0 Hz';
+    etiquetaEstado.textContent = 'ESPERANDO SEÑAL...';
+    etiquetaEstado.style.color = '#7fbf85';
+    luzCheck.classList.remove('on');
+    apagarMedidor();
+  }
+
+  function bucleDeteccion(){
+    if(!activo) return;
+
+    analyser.getFloatTimeDomainData(bufferEntrada);
+    const [frecuencia, claridad] = detector.findPitch(bufferEntrada, audioCtx.sampleRate);
+
+    if(claridad > 0.9 && frecuencia > 60 && frecuencia < 1200){
+      const { nombre, octava, cents } = frecuenciaANota(frecuencia);
+      notaGrande.textContent = nombre;
+      octavaChica.textContent = octava;
+      frecuenciaTexto.textContent = frecuencia.toFixed(1) + ' Hz';
+      moverMedidor(cents);
+      actualizarColores(cents);
+    } else {
+      notaGrande.classList.remove('activa');
+      octavaChica.classList.remove('activa');
+      luzCheck.classList.remove('on');
+      etiquetaEstado.textContent = 'ESCUCHANDO...';
+      etiquetaEstado.style.color = '#7fbf85';
+      apagarMedidor();
+    }
+
+    animId = requestAnimationFrame(bucleDeteccion);
+  }
+
+  async function alternarMicrofono(){
+    if(activo){
+      activo = false;
+      if(animId) cancelAnimationFrame(animId);
+      if(stream) stream.getTracks().forEach(t => t.stop());
+      if(audioCtx) audioCtx.close();
+      audioCtx = null;
+      analyser = null;
+      detector = null;
+      stream = null;
+      btnActivar.textContent = '';
+      btnActivar.innerHTML = '🎤<br>ACTIVAR';
+      btnActivar.classList.remove('encendido');
+      limpiarPantalla();
+      return;
+    }
+
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+      });
+
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const fuente = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = FFT_SIZE;
+      fuente.connect(analyser);
+
+      detector = PitchDetector.forFloat32Array(analyser.fftSize);
+      bufferEntrada = new Float32Array(detector.inputLength);
+
+      activo = true;
+      btnActivar.innerHTML = '⏹<br>DETENER';
+      btnActivar.classList.add('encendido');
+      etiquetaEstado.textContent = 'ESCUCHANDO...';
+
+      bucleDeteccion();
+    } catch(err){
+      etiquetaEstado.textContent = 'NO SE PUDO ACCEDER AL MICRÓFONO';
+      etiquetaEstado.style.color = '#ff5b5b';
+      console.error(err);
+    }
+  }
+
+  window.alternarMicrofono = alternarMicrofono;
+
+  dibujarMedidorBase();
+  limpiarPantalla();
+</script>
+
+</body>
+</html>
