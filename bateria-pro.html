@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batería Virtual PRO - Filadelfia</title>
+<style>
+  :root{
+    --fondo-1:#1c1f26;
+    --fondo-2:#0c0e12;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:linear-gradient(160deg, var(--fondo-1), var(--fondo-2));
+    font-family:'Segoe UI', Arial, sans-serif;
+    color:#eef2f5;
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  .encabezado{
+    text-align:center;
+    padding:18px 16px 4px;
+  }
+  .encabezado h1{
+    font-size:19px;
+    margin:0 0 2px;
+  }
+  .encabezado p{
+    margin:0;
+    font-size:12px;
+    color:#9aa6b2;
+  }
+
+  .zona-activar{
+    display:flex;
+    justify-content:center;
+    padding:10px 16px 4px;
+  }
+  .btn-activar-audio{
+    background:linear-gradient(135deg,#3fa9f5,#1c6fb5);
+    color:#fff;
+    border:none;
+    padding:10px 22px;
+    border-radius:24px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:0 6px 14px rgba(63,169,245,0.35);
+  }
+  .btn-activar-audio[disabled]{ opacity:0.5; cursor:default; }
+
+  .barra-intensidad{
+    max-width:640px;
+    margin:14px auto 4px;
+    padding:0 16px;
+  }
+  .barra-intensidad .etiqueta{
+    font-size:11.5px;
+    color:#9aa6b2;
+    margin-bottom:6px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .selector-intensidad{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:6px;
+  }
+  .btn-intensidad{
+    background:#232833;
+    border:1px solid #333a47;
+    color:#aab4c0;
+    padding:8px 4px;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-intensidad.activo{
+    background:linear-gradient(135deg,#3fa9f5,#1c6fb5);
+    color:#fff;
+    border-color:#3fa9f5;
+  }
+  .nota-pressure{
+    font-size:10.5px;
+    color:#6c7684;
+    text-align:center;
+    margin-top:6px;
+  }
+
+  .rejilla-pads{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    padding:16px;
+    max-width:640px;
+    margin:0 auto;
+  }
+  @media (min-width:520px){
+    .rejilla-pads{ grid-template-columns:repeat(4, 1fr); }
+  }
+  @media (min-width:700px){
+    .rejilla-pads{ grid-template-columns:repeat(5, 1fr); }
+  }
+
+  .pad{
+    position:relative;
+    border-radius:14px;
+    padding:0;
+    height:92px;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    color:#fff;
+    font-family:inherit;
+    box-shadow:0 6px 14px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15);
+    transition:transform .05s;
+    overflow:hidden;
+  }
+  .pad .icono{ font-size:24px; }
+  .pad .nombre{ font-size:11px; font-weight:700; text-align:center; padding:0 4px; line-height:1.2; }
+  .pad.tocando{ transform:scale(0.93); filter:brightness(1.5); }
+  .pad::after{
+    content:"";
+    position:absolute; inset:0;
+    background:rgba(255,255,255,0);
+    transition:background .12s;
+    pointer-events:none;
+  }
+  .pad.tocando::after{ background:rgba(255,255,255,0.25); }
+  .pad.sin-cargar{ opacity:0.35; filter:grayscale(0.6); }
+
+  .pad-bombo{ background:linear-gradient(150deg,#c0392b,#6e1c12); }
+  .pad-redoblante{ background:linear-gradient(150deg,#e2b93b,#8a6a10); }
+  .pad-hh-cerrado{ background:linear-gradient(150deg,#5aa9e6,#1c4a75); }
+  .pad-hh-abierto{ background:linear-gradient(150deg,#7fd1c2,#1f6e5f); }
+  .pad-hh-medio{ background:linear-gradient(150deg,#63c2b0,#1a5548); }
+  .pad-hh-pedal{ background:linear-gradient(150deg,#3f7fa6,#1a3a4d); }
+  .pad-tom{ background:linear-gradient(150deg,#e08a4f,#8a4110); }
+  .pad-tom-piso{ background:linear-gradient(150deg,#7a5a3a,#3a2a18); }
+  .pad-crash1{ background:linear-gradient(150deg,#f4d03f,#a17f0a); }
+  .pad-crash2{ background:linear-gradient(150deg,#f7dc6f,#8a6a10); }
+  .pad-ride{ background:linear-gradient(150deg,#58d68d,#1a7a45); }
+  .pad-ridesz{ background:linear-gradient(150deg,#7fe0a8,#1f6b45); }
+  .pad-ridebell{ background:linear-gradient(150deg,#48c9b0,#0e5f52); }
+
+  .pie{
+    text-align:center;
+    color:#7c8896;
+    font-size:11px;
+    padding:6px 16px 30px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 auto;
+  }
+  .pie b{ color:#a9b4c0; }
+</style>
+</head>
+<body>
+
+  <div class="encabezado">
+    <h1>🥁 Batería Virtual PRO</h1>
+    <p>Instrumento con capas de intensidad real, estilo sampler profesional</p>
+  </div>
+
+  <div class="zona-activar">
+    <button class="btn-activar-audio" id="btnActivarAudio">🔊 Cargar sonidos</button>
+  </div>
+
+  <div class="barra-intensidad">
+    <div class="etiqueta">
+      <span>Intensidad al tocar</span>
+      <span id="etiquetaIntensidadActual">mf</span>
+    </div>
+    <div class="selector-intensidad" id="selectorIntensidad">
+      <button class="btn-intensidad" data-nivel="p">p</button>
+      <button class="btn-intensidad" data-nivel="mp">mp</button>
+      <button class="btn-intensidad activo" data-nivel="mf">mf</button>
+      <button class="btn-intensidad" data-nivel="f">f</button>
+      <button class="btn-intensidad" data-nivel="ff">ff</button>
+    </div>
+    <div class="nota-pressure" id="notaPressure">
+      Si tu pantalla/lápiz detecta presión, se usa automáticamente en vez de este selector.
+    </div>
+  </div>
+
+  <div class="rejilla-pads" id="rejillaPads"></div>
+
+  <p class="pie">
+    <b>Cada golpe usa muestras reales de batería</b>, con varias capas de intensidad (de suave a fuerte)
+    y variaciones para que un mismo golpe repetido no suene siempre idéntico — igual que un sampler
+    profesional tipo Kontakt, pero corriendo aquí en el navegador con tus propios sonidos.
+  </p>
+
+<script>
+  // ============ Definición del instrumento (estilo mapa de Kontakt) ============
+  // Cada pieza tiene: nombre visible, icono, clase de color, y sus capas por intensidad.
+  // Cada capa es una lista de archivos (round robin: si hay varios, se turnan/alternan).
+  const INSTRUMENTO = [
+    {
+      id: 'bombo', nombre: 'Bombo', icono: '🦶', clase: 'pad-bombo', tecla: 'a',
+      capas: {
+        p:  ['BD_p_1_C1.wav'],
+        mp: ['BD_mp_1_C1.wav', 'BD_mp_2_C1.wav'],
+        mf: ['BD_mp_2_C1.wav'],   // sin muestra "mf" propia: usamos la más cercana
+        f:  ['BD_f_1_C1.wav'],
+        ff: ['BD_ff_1_C1.wav']
+      }
+    },
+    {
+      id: 'redoblante', nombre: 'Redoblante', icono: '🥁', clase: 'pad-redoblante', tecla: 's',
+      capas: {
+        p:  ['SNR_p_1_D1.wav', 'SNR_p_2_D1.wav'],
+        mp: ['SNR_p_2_D1.wav'],
+        mf: ['SNR_mf_1_D1.wav', 'SNR_mf_2_D1.wav'],
+        f:  ['SNR_mf_2_D1.wav'],
+        ff: ['SNR_ff_1_D1.wav', 'SNR_ff_2_D1.wav']
+      }
+    },
+    {
+      id: 'hh-cerrado', nombre: 'Hi-Hat cerrado', icono: '🔘', clase: 'pad-hh-cerrado', tecla: 'd',
+      capas: {
+        p:  ['HH_p_1_F#1.wav', 'HH_p_2_F#1.wav', 'HH_p_3_F#1.wav'],
+        mp: ['HH_mp_1_F#1.wav', 'HH_mp_2_F#1.wav', 'HH_mp_3_F#1.wav'],
+        mf: ['HH_mf_1_F#1.wav', 'HH_mf_2_F#1.wav', 'HH_mf_3_F#1.wav'],
+        f:  ['HH_f_1_F#1.wav', 'HH_f_2_F#1.wav', 'HH_f_3_F#1.wav'],
+        ff: ['HH_f_1_F#1.wav', 'HH_f_2_F#1.wav', 'HH_f_3_F#1.wav']
+      }
+    },
+    {
+      id: 'hh-abierto', nombre: 'Hi-Hat abierto', icono: '⭕', clase: 'pad-hh-abierto', tecla: 'f',
+      capas: {
+        p:  ['oHH_p_A#1.wav'],
+        mp: ['oHH_mp_A#1.wav'],
+        mf: ['oHH_mf_A#1.wav'],
+        f:  ['oHH_f_A#1.wav'],
+        ff: ['oHH_f_A#1.wav']
+      }
+    },
+    {
+      id: 'hh-medio', nombre: 'Hi-Hat medio', icono: '🌗', clase: 'pad-hh-medio', tecla: 'g',
+      capas: {
+        p:  ['ocHH_p_F#2.wav'],
+        mp: ['ocHH_mp_F#2.wav'],
+        mf: ['ocHH_mf_F#2.wav'],
+        f:  ['ocHH_f_F#2.wav'],
+        ff: ['ocHH_ff_F#2.wav']
+      }
+    },
+    {
+      id: 'hh-pedal', nombre: 'Hi-Hat pedal', icono: '🦵', clase: 'pad-hh-pedal', tecla: 'h',
+      capas: {
+        p:  ['ftHH_G#1.wav'],
+        mp: ['ftHH_G#1.wav'],
+        mf: ['ftHH_G#1.wav'],
+        f:  ['ftHH_G#1.wav'],
+        ff: ['ftHH_G#1.wav']
+      }
+    },
+    {
+      id: 'tom', nombre: 'Tom', icono: '🔺', clase: 'pad-tom', tecla: 'j',
+      capas: {
+        p:  ['Tom_p_F1.wav'],
+        mp: ['Tom_p_F1.wav'],
+        mf: ['Tom_f_1_F1.wav', 'Tom_f_2_F1.wav'],
+        f:  ['Tom_f_1_F1.wav', 'Tom_f_2_F1.wav'],
+        ff: ['Tom_f_1_F1.wav', 'Tom_f_2_F1.wav']
+      }
+    },
+    {
+      id: 'tom-piso', nombre: 'Tom de piso', icono: '⬛', clase: 'pad-tom-piso', tecla: 'k',
+      capas: {
+        p:  ['FT_mp_A1.wav'],
+        mp: ['FT_mp_A1.wav'],
+        mf: ['FT_mf_A1.wav'],
+        f:  ['FT_f_A1.wav'],
+        ff: ['FT_f_A1.wav']
+      }
+    },
+    {
+      id: 'crash1', nombre: 'Crash 1', icono: '💥', clase: 'pad-crash1', tecla: 'l',
+      capas: {
+        p:  ['Cymbal1_OH87_mp_C#2.wav'],
+        mp: ['Cymbal1_OH87_mp_C#2.wav'],
+        mf: ['Cymbal1_OH87_mf_C#2.wav'],
+        f:  ['Cymbal1_OH87_f_C#2.wav'],
+        ff: ['Cymbal1_OH87_f_C#2.wav']
+      }
+    },
+    {
+      id: 'crash2', nombre: 'Crash 2', icono: '✨', clase: 'pad-crash2', tecla: ';',
+      capas: {
+        p:  ['Cymbalsz_OH87_mp_D2.wav'],
+        mp: ['Cymbalsz_OH87_mp_D2.wav'],
+        mf: ['Cymbalsz_OH87_mf_D2.wav'],
+        f:  ['Cymbalsz_OH87_f_D2.wav'],
+        ff: ['Cymbalsz_OH87_f_D2.wav']
+      }
+    },
+    {
+      id: 'ride', nombre: 'Ride', icono: '🔵', clase: 'pad-ride', tecla: 'z',
+      capas: {
+        p:  ['Ride_OH87_p_D#2.wav'],
+        mp: ['Ride_OH87_mp_D#2.wav'],
+        mf: ['Ride_OH87_mf_D#2.wav'],
+        f:  ['Ride_OH87_f_D#2.wav'],
+        ff: ['Ride_OH87_ff_D#2.wav']
+      }
+    },
+    {
+      id: 'ridesz', nombre: 'Ride sizzle', icono: '🌟', clase: 'pad-ridesz', tecla: 'x',
+      capas: {
+        p:  ['Ridesz_OH87_p_F2.wav'],
+        mp: ['Ridesz_OH87_mp_F2.wav'],
+        mf: ['Ridesz_OH87_mf_F2.wav'],
+        f:  ['Ridesz_OH87_f_F2.wav'],
+        ff: ['Ridesz_OH87_ff_F2.wav']
+      }
+    },
+    {
+      id: 'ridebell', nombre: 'Ride campana', icono: '🔔', clase: 'pad-ridebell', tecla: 'c',
+      capas: {
+        p:  ['RideBell_OH87_p_E2.wav'],
+        mp: ['RideBell_OH87_p_E2.wav'],
+        mf: ['RideBell_OH87_mf_E2.wav'],
+        f:  ['RideBell_OH87_mf_E2.wav'],
+        ff: ['RideBell_OH87_mf_E2.wav']
+      }
+    }
+  ];
+
+  const CARPETA_SAMPLES = 'samples/';
+  const NIVELES = ['p', 'mp', 'mf', 'f', 'ff'];
+
+  let audioCtx = null;
+  let audioListo = false;
+  let buffers = {};          // { 'archivo.wav': AudioBuffer }
+  let indiceRoundRobin = {}; // { 'bombo_mf': 0, ... } turno actual por instrumento+nivel
+  let nivelManualActual = 'mf';
+
+  const btnActivarAudio = document.getElementById('btnActivarAudio');
+  const rejillaPads = document.getElementById('rejillaPads');
+  const selectorIntensidad = document.getElementById('selectorIntensidad');
+  const etiquetaIntensidadActual = document.getElementById('etiquetaIntensidadActual');
+
+  // ---------- Construir la rejilla de pads ----------
+  INSTRUMENTO.forEach(pieza => {
+    const boton = document.createElement('button');
+    boton.className = `pad ${pieza.clase} sin-cargar`;
+    boton.dataset.id = pieza.id;
+    boton.dataset.tecla = pieza.tecla;
+    boton.innerHTML = `
+      <span class="icono">${pieza.icono}</span>
+      <span class="nombre">${pieza.nombre}</span>
+    `;
+    rejillaPads.appendChild(boton);
+  });
+  const pads = Array.from(document.querySelectorAll('.pad'));
+
+  // ---------- Recolectar todos los archivos únicos a cargar ----------
+  function listaArchivosUnicos(){
+    const set = new Set();
+    INSTRUMENTO.forEach(pieza => {
+      NIVELES.forEach(nivel => {
+        (pieza.capas[nivel] || []).forEach(archivo => set.add(archivo));
+      });
+    });
+    return Array.from(set);
+  }
+
+  async function cargarSonidos(){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const archivos = listaArchivosUnicos();
+
+    let cargados = 0;
+    btnActivarAudio.textContent = `Cargando 0/${archivos.length}...`;
+
+    await Promise.all(archivos.map(async (archivo) => {
+      const resp = await fetch(CARPETA_SAMPLES + encodeURIComponent(archivo).replace(/%2F/g, '/'));
+      const arrayBuffer = await resp.arrayBuffer();
+      buffers[archivo] = await audioCtx.decodeAudioData(arrayBuffer);
+      cargados++;
+      btnActivarAudio.textContent = `Cargando ${cargados}/${archivos.length}...`;
+    }));
+
+    audioListo = true;
+    btnActivarAudio.textContent = '✅ Sonidos listos';
+    btnActivarAudio.disabled = true;
+    pads.forEach(pad => pad.classList.remove('sin-cargar'));
+  }
+
+  // ---------- Selección de capa según intensidad (0 a 1) ----------
+  function nivelDesdeIntensidad(valor01){
+    if(valor01 < 0.2) return 'p';
+    if(valor01 < 0.4) return 'mp';
+    if(valor01 < 0.6) return 'mf';
+    if(valor01 < 0.8) return 'f';
+    return 'ff';
+  }
+
+  function elegirArchivo(pieza, nivel){
+    const lista = pieza.capas[nivel] || pieza.capas['mf'] || [];
+    if(lista.length === 0) return null;
+
+    const clave = `${pieza.id}_${nivel}`;
+    const turno = (indiceRoundRobin[clave] || 0) % lista.length;
+    indiceRoundRobin[clave] = turno + 1;
+    return lista[turno];
+  }
+
+  function reproducir(pieza, valorIntensidad){
+    if(!audioListo) return;
+
+    const nivel = (typeof valorIntensidad === 'number')
+      ? nivelDesdeIntensidad(valorIntensidad)
+      : nivelManualActual;
+
+    const archivo = elegirArchivo(pieza, nivel);
+    if(!archivo || !buffers[archivo]) return;
+
+    const fuente = audioCtx.createBufferSource();
+    fuente.buffer = buffers[archivo];
+
+    const ganancia = audioCtx.createGain();
+    ganancia.gain.value = 0.95;
+
+    fuente.connect(ganancia);
+    ganancia.connect(audioCtx.destination);
+    fuente.start(0);
+  }
+
+  function destacarPad(pad){
+    pad.classList.add('tocando');
+    setTimeout(() => pad.classList.remove('tocando'), 100);
+  }
+
+  function tocarPadPorId(id, valorIntensidad){
+    if(!audioListo){
+      cargarSonidos();
+      return;
+    }
+    const pieza = INSTRUMENTO.find(p => p.id === id);
+    const pad = pads.find(p => p.dataset.id === id);
+    if(!pieza || !pad) return;
+
+    reproducir(pieza, valorIntensidad);
+    destacarPad(pad);
+  }
+
+  // ---------- Interacción táctil / mouse / lápiz con presión ----------
+  pads.forEach(pad => {
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      // pressure viene 0..1 en lápices/pantallas con fuerza; el mouse normal reporta 0.5
+      let valorIntensidad = undefined;
+      if(typeof e.pressure === 'number' && e.pressure > 0 && e.pressure !== 0.5){
+        valorIntensidad = e.pressure;
+      }
+      tocarPadPorId(pad.dataset.id, valorIntensidad);
+    });
+  });
+
+  btnActivarAudio.addEventListener('click', cargarSonidos);
+
+  // ---------- Selector manual de intensidad ----------
+  selectorIntensidad.querySelectorAll('.btn-intensidad').forEach(boton => {
+    boton.addEventListener('click', () => {
+      selectorIntensidad.querySelectorAll('.btn-intensidad').forEach(b => b.classList.remove('activo'));
+      boton.classList.add('activo');
+      nivelManualActual = boton.dataset.nivel;
+      etiquetaIntensidadActual.textContent = nivelManualActual;
+    });
+  });
+
+  // ---------- Teclado ----------
+  const MAPA_TECLAS = {};
+  INSTRUMENTO.forEach(pieza => { MAPA_TECLAS[pieza.tecla] = pieza.id; });
+
+  const teclasPresionadas = new Set();
+  document.addEventListener('keydown', (e) => {
+    const tecla = e.key.toLowerCase();
+    if(teclasPresionadas.has(tecla)) return;
+    const id = MAPA_TECLAS[tecla];
+    if(id){
+      teclasPresionadas.add(tecla);
+      tocarPadPorId(id);
+    }
+  });
+  document.addEventListener('keyup', (e) => {
+    teclasPresionadas.delete(e.key.toLowerCase());
+  });
+</script>
+
+</body>
+</html>
