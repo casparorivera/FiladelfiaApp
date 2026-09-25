@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gran Celebración - Ministerio de Alabanza Filadelfia</title>
+<link rel="stylesheet" href="domingo.css">
+<style>
+  .btn-listado{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #2B3A67;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-listado:hover{ opacity: .9; }
+  .btn-listado:disabled{ opacity: .6; cursor: default; }
+  .btn-listado-hint{
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+<img src="images/logo-filadelfia.jpg" alt="Logo Ministerio">
+<div>
+<small>MINISTERIO DE ALABANZA</small>
+<h1>FILADELFIA CENTRAL</h1>
+</div>
+</header>
+
+<main class="container">
+
+<section class="hero">
+<h2>🎵 Gran Celebración</h2>
+<p id="fecha">Cargando fecha...</p>
+<div>
+  <button class="btn-listado" id="btnListado" onclick="abrirListadoCompleto()" disabled>
+    🖨️ Generar listado completo de los scores
+  </button>
+  <div class="btn-listado-hint">Abre todas las canciones de la semana, una tras otra, en el visor de cifrados.</div>
+</div>
+</section>
+
+<section class="observacion" id="observacion">
+<h3>📌 Observación general</h3>
+<p>Cargando...</p>
+</section>
+
+<div id="contenido">Cargando listado musical...</div>
+
+</main>
+
+<script>
+// Pestaña "Domingos" del Panel de Administración (Fecha/Sección/Orden/
+// Canción/ID URL/Observación/Observación general/Hora/Tonalidad).
+const URL_DOMINGOS="https://docs.google.com/spreadsheets/d/e/2PACX-1vRgCDbPXxAAo1hNZG09m3gziQCap259U1hsgBvJgCd3xgZ5mxfb-HnaXufZsweBMCcdIVHsYsONF1pg/pub?gid=0&single=true&output=csv";
+
+// URL del visor de cifrados — el que combina Cifra Pro y PDF (el mismo
+// que usa el Generador de listados), no el visor viejo de solo Cifra Pro.
+const VISOR_BASE_URL = "https://casparorivera.github.io/Filadelfia-Lista-de-Cifrados/visor-cifrados.html";
+
+function parseCSV(text){
+let rows=[],row=[],cell="",quote=false;
+for(let i=0;i<text.length;i++){
+let c=text[i];
+if(c=='"'){if(quote&&text[i+1]=='"'){cell+='"';i++;}else quote=!quote;}
+else if(c==','&&!quote){row.push(cell);cell="";}
+else if((c=='\n'||c=='\r')&&!quote){if(c=='\r'&&text[i+1]=='\n')i++;row.push(cell);rows.push(row);row=[];cell="";}
+else cell+=c;
+}
+if(cell||row.length){row.push(cell);rows.push(row);}
+let headers=rows.shift().map(x=>x.trim());
+return rows.filter(r=>r.length).map(r=>{let o={};headers.forEach((h,i)=>o[h]=(r[i]||"").trim());return o;}).filter(o=>Object.values(o).some(v=>v));
+}
+
+async function csv(url){return parseCSV(await (await fetch(url)).text());}
+
+/** Convierte "2026-09-15" a fecha local (evita el corrimiento de un día
+ * que da new Date('2026-09-15') por interpretarse como UTC). */
+function fechaISOaLocal(iso){
+  const p=(iso||"").split("-");
+  if(p.length===3) return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));
+  return new Date(iso);
+}
+function fechaLarga(iso){
+  const x=fechaISOaLocal(iso);
+  if(isNaN(x)) return iso||"";
+  const d=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const m=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  return `${d[x.getDay()]} ${x.getDate()} de ${m[x.getMonth()]}`;
+}
+
+/** Convierte cualquier hora (24h "14:30", o 12h ya con AM/PM en cualquier
+ * variante) al formato "hh:mm a. m./p. m." consistente. */
+function formatoHora12(valor){
+  if(!valor) return "";
+  const texto=String(valor).trim();
+
+  const con12=texto.match(/^(\d{1,2}):(\d{2})\s*([ap])/i);
+  if(con12){
+    const h=String(Number(con12[1])).padStart(2,"0");
+    return `${h}:${con12[2]} ${con12[3].toUpperCase()}. M.`;
+  }
+
+  const con24=texto.match(/^(\d{1,2}):(\d{2})$/);
+  if(con24){
+    let h=Number(con24[1]);
+    const min=con24[2];
+    const letra=h>=12 ? "P" : "A";
+    h=h % 12 || 12;
+    return `${String(h).padStart(2,"0")}:${min} ${letra}. M.`;
+  }
+
+  return texto;
+}
+
+// Guardamos las canciones ya cargadas para poder armar el link del
+// listado completo sin volver a pedir el CSV.
+let cancionesCargadas = [];
+
+/** Saca el id=... de un link del visor de cifrados (…/visor-cifrados.html?id=XXXX). */
+function extraerVisorId(link){
+  if(!link) return null;
+  const m = link.match(/[?&]id=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/** Codifica texto (JSON) a base64 seguro con acentos/emoji, igual a como
+ * lo espera el parámetro ?listadoB64= del visor. */
+function base64DeTexto(texto){
+  return btoa(unescape(encodeURIComponent(texto)));
+}
+
+/** A partir del link guardado en "ID URL" arma el item {tipo, id/url} que
+ * entiende el visor combinado: si el link es del visor de Cifra Pro (trae
+ * ?id=) se manda como tipo "pro"; si es otro link (PDF/Drive) se manda tal
+ * cual como tipo "pdf". */
+function itemVisorDeCancion(c){
+  const link = c["ID URL"];
+  if(!link) return null;
+  const id = extraerVisorId(link);
+  return id
+    ? { tipo: "pro", id: id, titulo: c["Canción"] || "" }
+    : { tipo: "pdf", url: link, titulo: c["Canción"] || "" };
+}
+
+/** Link del visor combinado para UNA sola canción — funciona igual para
+ * Cifra Pro (usa ?id= directo) que para PDF (usa ?listadoB64= con un solo
+ * elemento, que es como el visor sabe mostrar un PDF suelto). */
+function linkVisorParaCancion(c){
+  const item = itemVisorDeCancion(c);
+  if(!item) return null;
+  if(item.tipo === "pro"){
+    return `${VISOR_BASE_URL}?id=${encodeURIComponent(item.id)}`;
+  }
+  return `${VISOR_BASE_URL}?listadoB64=${encodeURIComponent(base64DeTexto(JSON.stringify([item])))}`;
+}
+
+async function cargar(){
+let canciones=await csv(URL_DOMINGOS);
+cancionesCargadas = canciones;
+
+if(!canciones.length){
+  document.getElementById("fecha").innerHTML="📅 Sin programación cargada todavía";
+  document.getElementById("observacion").innerHTML=`<h3>📌 Observación general</h3><p>Sin observaciones</p>`;
+  document.getElementById("contenido").innerHTML="";
+  return;
+}
+
+// La fecha y la hora de llegada se toman de la primera fila (fila 2 del
+// Sheet) — es el mismo dato para toda la programación del domingo.
+const primera = canciones[0];
+document.getElementById("fecha").innerHTML=
+  `📅 ${fechaLarga(primera["Fecha"])}<br>⏰ Llegada: ${formatoHora12(primera["Hora"])}`;
+
+document.getElementById("observacion").innerHTML=
+`<h3>📌 Observación general</h3>
+<p>${primera["Observación general"]||"Sin observaciones"}</p>`;
+
+let grupos={};
+canciones.forEach(c=>{
+let s=c["Sección"]||"General";
+if(!grupos[s]) grupos[s]=[];
+grupos[s].push(c);
+});
+Object.keys(grupos).forEach(s=>grupos[s].sort((a,b)=>Number(a["Orden"])-Number(b["Orden"])));
+
+let html="";
+
+for(let s in grupos){
+
+html+=`<section class="seccion"><h2>${s}</h2>`;
+
+grupos[s].forEach(c=>{
+
+html+=`
+<article class="cancion">
+
+<div>
+<strong>${c["Orden"]||""}. ${c["Canción"]||""}</strong>
+<p>🎹 Tonalidad: ${c["Tonalidad"]||""}</p>
+</div>
+
+${linkVisorParaCancion(c) ? `<a target="_blank" href="${linkVisorParaCancion(c)}">📄 Chart</a>` : `<span style="font-size:12px;color:#888;">Sin chart cargado</span>`}
+
+${c["Observación"] ? 
+`<div class="nota">
+⚠️ <strong>Observación:</strong><br>
+${c["Observación"]}
+</div>` : ""}
+
+</article>`;
+
+});
+
+html+="</section>";
+}
+
+document.getElementById("contenido").innerHTML=html;
+
+const itemsValidos = canciones.map(itemVisorDeCancion).filter(Boolean);
+const btn = document.getElementById("btnListado");
+btn.disabled = itemsValidos.length === 0;
+if(itemsValidos.length < canciones.length){
+  document.querySelector(".btn-listado-hint").innerHTML =
+    `Abre ${itemsValidos.length} de ${canciones.length} canciones en el visor — las demás no tienen todavía un chart cargado.`;
+}
+}
+
+/** Arma el link combinado del visor (Cifra Pro + PDF mezclados) con todas
+ * las canciones de la semana, en el mismo orden del listado, y lo abre en
+ * una pestaña nueva — el visor las muestra una tras otra, ya con toda su
+ * tipografía y diagramas, sin duplicar nada de su interfaz. */
+function abrirListadoCompleto(){
+  const items = cancionesCargadas.map(itemVisorDeCancion).filter(Boolean);
+  if(items.length === 0){
+    alert("Ninguna canción de esta semana tiene todavía un chart cargado.");
+    return;
+  }
+  const url = `${VISOR_BASE_URL}?listadoB64=${encodeURIComponent(base64DeTexto(JSON.stringify(items)))}`;
+  window.open(url, "_blank");
+}
+
+cargar();
+</script>
+
+</body>
+</html>
