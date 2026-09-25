@@ -2,8 +2,20 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+(function(){
+  try {
+    if (localStorage.getItem('filadelfiaListadosAcceso') !== 'ok') {
+      window.location.href = 'login.html';
+    }
+  } catch(e) {}
+})();
+</script>
 <title>Visor de cifrados — Alabanza Filadelfia</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="theme-color" content="#123a68">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1410,12 +1422,42 @@ document.addEventListener('click', (e) => {
  * página de domingo), carga esas canciones una tras otra. Si trae
  * ?id=… (link directo de una sola canción), la abre de una vez, sin
  * que la persona tenga que buscarla. */
+// ⚠️ PENDIENTE: pega aquí la misma URL /exec del backend "Acortador de Listados".
+const URL_ACORTADOR = 'https://script.google.com/macros/s/AKfycbzaIIxQLlipgkY52NFJnbdGy48UdhPFOqkNYPvwidDS7dAkS2yqhP-942MIOHeShthE/exec';
+
 const urlParams = new URLSearchParams(window.location.search);
 const idsParam = urlParams.get('ids');
 const directId = urlParams.get('id');
 const modoListado = urlParams.get('modoLista');
+const listadoB64Param = urlParams.get('listadoB64');
+const codigoCortoParam = urlParams.get('l');
 
-if(modoListado && backendReady()){
+function base64ATexto(b64){
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+if(codigoCortoParam && backendReady()){
+  (async () => {
+    try{
+      const r = await fetch(`${URL_ACORTADOR}?accion=obtener&codigo=${encodeURIComponent(codigoCortoParam)}`);
+      const datos = await r.json();
+      if(datos.ok && Array.isArray(datos.canciones) && datos.canciones.length){
+        loadMultipleSongsMixed(datos.canciones);
+      } else {
+        document.getElementById('emptyState').innerHTML = '<p style="text-align:center;padding:40px;color:var(--muted)">Ese enlace ya no es válido o no existe.</p>';
+      }
+    }catch(e){
+      console.warn('No se pudo consultar el listado corto:', e);
+    }
+  })();
+} else if(listadoB64Param && backendReady()){
+  try{
+    const lista = JSON.parse(base64ATexto(decodeURIComponent(listadoB64Param)));
+    if(Array.isArray(lista) && lista.length) loadMultipleSongsMixed(lista);
+  }catch(e){
+    console.warn('No se pudo leer el listado del enlace:', e);
+  }
+} else if(modoListado && backendReady()){
   try{
     const guardado = JSON.parse(localStorage.getItem('visorListadoActual') || '[]');
     if(guardado.length) loadMultipleSongsMixed(guardado);
