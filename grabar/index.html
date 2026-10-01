@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graba tu música · App Filadelfia</title>
+    <meta name="description" content="Graba y mezcla varias pistas directamente desde el navegador." />
+    <script>
+      // Candado de sesión — igual al que usan las demás páginas de la App Filadelfia.
+      // Si no hay sesión guardada en este dispositivo, manda a la persona al login
+      // antes de que la página (y el DAW) termine de cargar.
+      (function () {
+        try {
+          if (
+            !localStorage.getItem('filadelfiaAppCorreo') ||
+            !localStorage.getItem('filadelfiaAppToken')
+          ) {
+            window.location.href = 'login.html';
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-CDvbCtNr.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bw7HBAoi.css">
+  </head>
+  <body>
+    <div id="root">
+      <p style="font-family: sans-serif; text-align: center; margin-top: 3rem; color: #666">
+        Cargando Graba tu música…
+      </p>
+    </div>
+  </body>
+</html>
