@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enseñanza de Alabanza | Filadelfia Central</title>
+<link rel="stylesheet" href="blog.css">
+<style>
+  /* ---------- Logo y botón volver ---------- */
+  .hero-heading{display:flex;align-items:center;gap:28px}
+  .hero-logo{width:auto;height:190px;max-width:95px;object-fit:contain;flex:0 0 auto;border-radius:8px;box-shadow:0 8px 22px rgba(17,52,86,.12)}
+  .hero-copy{min-width:0}
+  .volver{display:inline-block;margin-top:34px;color:var(--blue);font-weight:700;text-decoration:none}
+  .volver:hover{text-decoration:underline}
+  @media(max-width:700px){.hero-heading{align-items:flex-start;gap:18px}.hero-logo{height:150px;max-width:75px}}
+
+  /* ---------- Filtros y buscador ---------- */
+  .filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:28px 0 6px}
+  .chip{border:1px solid #cfdbe8;background:#fff;color:var(--navy);border-radius:999px;padding:8px 15px;font:700 13px Arial,Helvetica,sans-serif;cursor:pointer}
+  .chip:hover{border-color:var(--blue)}
+  .chip.activo{background:var(--navy);border-color:var(--navy);color:#fff}
+  .chip .n{opacity:.6;font-weight:600;margin-left:4px}
+  .buscador{margin-left:auto;flex:0 1 270px}
+  .buscador input{width:100%;padding:9px 15px;border:1px solid #cfdbe8;border-radius:999px;font-size:14px;background:#fff;color:var(--text)}
+  .leyenda{color:var(--muted);font-size:14px;font-style:italic;margin:8px 0 20px}
+
+  /* ---------- Tarjetas ---------- */
+  .charlas{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:22px}
+  .charla{display:flex;flex-direction:column;text-align:left;padding:0;border:1px solid #dce6ef;background:#fff;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:0 8px 22px rgba(25,57,89,.08);font:inherit;color:inherit;transition:transform .15s ease,box-shadow .15s ease}
+  .charla:hover,.charla:focus-visible{transform:translateY(-3px);box-shadow:0 14px 30px rgba(25,57,89,.16);outline:none}
+  .charla:focus-visible{box-shadow:0 0 0 3px rgba(46,114,189,.45)}
+  .miniatura{position:relative;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:46px;color:#fff;background:linear-gradient(135deg,var(--navy),var(--blue))}
+  .tipo-MP3 .miniatura{background:linear-gradient(135deg,#d9622b,var(--orange))}
+  .tipo-PDF .miniatura{background:linear-gradient(135deg,#2c7a5b,#3fa47a)}
+  .miniatura img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .play{position:relative;width:58px;height:58px;border-radius:50%;background:rgba(11,49,93,.85);display:flex;align-items:center;justify-content:center;font-size:22px;padding-left:4px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+  .charla .cuerpo{padding:16px 18px 20px;display:flex;flex-direction:column;gap:6px}
+  .charla .etiqueta{color:var(--orange);font-size:11px;font-weight:800;letter-spacing:1.4px}
+  .charla h3{margin:0;color:var(--navy);font:700 20px/1.2 Georgia,"Times New Roman",serif}
+  .charla .fecha-tarjeta{color:var(--muted);font-size:12.5px}
+  .charla .extracto{margin:2px 0 0;color:var(--muted);font-size:13.5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .estado{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 10px}
+
+  /* ---------- Ventana emergente ---------- */
+  body.modal-abierto{overflow:hidden}
+  .modal-fondo{position:fixed;inset:0;background:rgba(10,20,35,.6);display:none;align-items:center;justify-content:center;padding:18px;z-index:1000}
+  .modal-fondo.activo{display:flex}
+  .modal-caja{position:relative;background:#fff;border-radius:20px;overflow-y:auto;width:min(820px,100%);max-height:92vh;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+  .cerrar{position:absolute;top:12px;right:12px;z-index:3;width:36px;height:36px;border-radius:50%;border:1px solid #dce6ef;background:#fff;color:var(--navy);font-size:18px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+  .modal-media:empty{display:none}
+  .video-wrap{position:relative;aspect-ratio:16/9;background:#000}
+  .video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .audio-wrap{padding:54px 26px 6px;background:linear-gradient(135deg,#d9622b,var(--orange))}
+  .audio-wrap audio{margin:0 0 20px;width:100%}
+  .pdf-wrap{height:62vh;background:#f4f6f8}
+  .pdf-wrap iframe{width:100%;height:100%;border:0}
+  .modal-cuerpo{padding:22px 26px 28px}
+  .modal-cuerpo h3{margin:6px 0 4px;color:var(--navy);font:700 28px/1.15 Georgia,"Times New Roman",serif}
+  .modal-fecha{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .modal-desc{color:#33475f;font-size:15px;line-height:1.65}
+  .modal-desc p{margin:0 0 12px}
+  .modal-desc h4{margin:18px 0 8px;color:var(--navy);font:700 18px Georgia,"Times New Roman",serif}
+  .modal-desc ul{margin:0 0 12px;padding-left:22px}
+  .modal-desc a{color:var(--blue)}
+  .modal-desc .desc-html div,.modal-desc .desc-html p{margin:0 0 10px}
+  .modal-desc .desc-html h1,.modal-desc .desc-html h2,.modal-desc .desc-html h3{font:700 18px Georgia,serif;color:var(--navy);margin:16px 0 8px}
+  .modal-acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .modal-acciones .button{margin-top:0}
+  .nota-pdf{font-size:12.5px;color:var(--muted);margin-top:10px}
+
+  @media(max-width:800px){
+    .buscador{margin-left:0;flex-basis:100%}
+    .modal-cuerpo h3{font-size:23px}
+    .pdf-wrap{height:56vh}
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">
+    <span>MINISTERIO DE ALABANZA</span>
+    <strong>FILADELFIA CENTRAL</strong>
+  </a>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="edificacion.html">Edificación</a>
+    <a href="cronograma.html">Cronograma</a>
+    <a href="blog.html">Enseñanza de Alabanza</a>
+    <a href="repositorio.html">Repositorio</a>
+    <a href="chat.html">Chat</a>
+  </nav>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <div class="hero-heading">
+      <img class="hero-logo" src="logo-alabanza.jpg" alt="Ministerio de Alabanza Filadelfia">
+      <div class="hero-copy">
+        <div class="eyebrow">BLOG · PODCAST DE ENSEÑANZA DE ALABANZA</div>
+        <h1>Enseñanza de Alabanza</h1>
+        <p class="lead">Conceptos básicos de alabanza y adoración para crecer juntos en el ministerio.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="filtros" id="filtros" hidden>
+    <button type="button" class="chip activo" data-filtro="todas">Todas<span class="n" data-n="todas"></span></button>
+    <button type="button" class="chip" data-filtro="YouTube">▶️ Video<span class="n" data-n="YouTube"></span></button>
+    <button type="button" class="chip" data-filtro="MP3">🎧 Audio<span class="n" data-n="MP3"></span></button>
+    <button type="button" class="chip" data-filtro="PDF">📖 PDF<span class="n" data-n="PDF"></span></button>
+    <label class="buscador"><input type="search" id="buscador" placeholder="Buscar una enseñanza…" aria-label="Buscar una enseñanza"></label>
+  </div>
+  <p class="leyenda" id="leyenda" hidden>👆 Toca una enseñanza para ver la descripción y escucharla, verla o leerla.</p>
+
+  <section class="charlas" id="charlas" aria-live="polite">
+    <p class="estado">Cargando enseñanzas…</p>
+  </section>
+  <noscript><p class="estado">Esta página necesita JavaScript para mostrar las enseñanzas.</p></noscript>
+  <a class="volver" href="index.html">← Volver al inicio</a>
+</main>
+
+<div class="modal-fondo" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+  <div class="modal-caja">
+    <button class="cerrar" type="button" id="cerrar" aria-label="Cerrar">✕</button>
+    <div class="modal-media" id="modalMedia"></div>
+    <div class="modal-cuerpo">
+      <div class="badge" id="modalBadge"></div>
+      <h3 id="modalTitulo"></h3>
+      <div class="modal-fecha" id="modalFecha"></div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-acciones" id="modalAcciones"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Pestaña "Enseñanza" del Google Sheet, publicada como CSV.
+   Columnas: Fecha | Titulo | Descripción | Tipo (MP3, PDF o YouTube) | Enlace */
+const URL_ENSENANZA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgCDbPXxAAo1hNZG09m3gziQCap259U1hsgBvJgCd3xgZ5mxfb-HnaXufZsweBMCcdIVHsYsONF1pg/pub?gid=981228279&single=true&output=csv';
+
+const TIPOS = {
+  YouTube: { icono: '▶️', etiqueta: 'VIDEO' },
+  MP3:     { icono: '🎧', etiqueta: 'PODCAST' },
+  PDF:     { icono: '📖', etiqueta: 'PDF' }
+};
+
+const $ = id => document.getElementById(id);
+let charlas = [];
+let filtroActivo = 'todas';
+let textoBusqueda = '';
+let ultimoFoco = null;
+
+/* ---------- Utilidades ---------- */
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function sinAcentos(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function parseCSV(text){
+  const rows = []; let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { if (quoted && text[i+1] === '"') { cell += '"'; i++; } else quoted = !quoted; }
+    else if (c === ',' && !quoted) { row.push(cell.trim()); cell = ''; }
+    else if ((c === '\n' || c === '\r') && !quoted) {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      row.push(cell.trim()); if (row.some(v => v !== '')) rows.push(row); row = []; cell = '';
+    }
+    else cell += c;
+  }
+  if (cell !== '' || row.length) { row.push(cell.trim()); if (row.some(v => v !== '')) rows.push(row); }
+  if (rows.length < 2) return [];
+  const headers = rows.shift().map(v => v.replace(/^"|"$/g, '').trim().toLowerCase());
+  return rows.map(r => { const o = {}; headers.forEach((h, i) => o[h] = (r[i] || '').replace(/^"|"$/g, '').trim()); return o; });
+}
+
+/* Solo se aceptan enlaces http(s) (o relativos al sitio). */
+function urlSegura(u){
+  try {
+    const url = new URL(String(u || '').trim(), location.href);
+    return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : '';
+  } catch (e) { return ''; }
+}
+
+function infoYouTube(url){
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\.|^m\./, '');
+    let id = '';
+    if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+    else if (host.endsWith('youtube.com')) {
+      if (u.pathname === '/watch') id = u.searchParams.get('v') || '';
+      else { const m = u.pathname.match(/^\/(shorts|embed|live)\/([^/?]+)/); if (m) id = m[2]; }
+    }
+    if (!/^[\w-]{6,20}$/.test(id)) return null;
+    const inicio = parseInt(u.searchParams.get('t') || u.searchParams.get('start') || '', 10);
+    return { id, inicio: inicio > 0 ? inicio : 0 };
+  } catch (e) { return null; }
+}
+
+function normalizarTipo(tipo, url){
+  const t = sinAcentos(tipo);
+  if (t.includes('youtube') || infoYouTube(url)) return 'YouTube';
+  if (t === 'pdf' || /\.pdf(\?|#|$)/i.test(url)) return 'PDF';
+  return 'MP3';
+}
+
+function parseFecha(s){
+  s = String(s || '').trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) { let d = +m[1], mo = +m[2]; if (mo > 12 && d <= 12) { const t = d; d = mo; mo = t; } return new Date(+m[3], mo - 1, d); }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function formatFecha(d){
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/* ---------- Descripción: texto con formato sencillo (### títulos, **negrita**, listas) ---------- */
+function enLinea(s){ /* s ya viene escapado */
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>')
+    .replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
+const HAY_HTML = /<\/?(b|i|u|em|strong|div|p|br|span|ul|ol|li|h[1-6]|a|font)\b/i;
+const PERMITIDAS = { B:1, STRONG:1, I:1, EM:1, U:1, BR:1, P:1, DIV:1, SPAN:1, UL:1, OL:1, LI:1, H1:1, H2:1, H3:1, H4:1, A:1 };
+
+/* La descripción se guarda desde un editor con formato (HTML). Se limpia con una lista
+   de etiquetas permitidas para que nada pueda ejecutar código en la página. */
+function limpiarHTML(html){
+  const doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
+  (function limpiar(nodo){
+    Array.from(nodo.childNodes).forEach(h => {
+      if (h.nodeType === 3) return;
+      if (h.nodeType !== 1) { h.remove(); return; }
+      if (/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED)$/.test(h.tagName)) { h.remove(); return; }
+      limpiar(h);
+      if (!PERMITIDAS[h.tagName]) { h.replaceWith(...h.childNodes); return; }
+      const href = h.tagName === 'A' ? urlSegura(h.getAttribute('href')) : '';
+      Array.from(h.attributes).forEach(a => h.removeAttribute(a.name));
+      if (h.tagName === 'A') {
+        if (href) { h.setAttribute('href', href); h.setAttribute('target', '_blank'); h.setAttribute('rel', 'noopener noreferrer'); }
+        else h.replaceWith(...h.childNodes);
+      }
+    });
+  })(doc.body);
+  return doc.body.innerHTML;
+}
+
+function textoPlano(texto){
+  if (!HAY_HTML.test(texto)) return String(texto || '');
+  const d = new DOMParser().parseFromString(String(texto).replace(/<\/(p|div|li|h[1-6])>|<br\s*\/?>/gi, '\n'), 'text/html');
+  return d.body.textContent || '';
+}
+
+function renderDescripcion(texto){
+  if (HAY_HTML.test(texto)) return '<div class="desc-html">' + limpiarHTML(String(texto)) + '</div>';
+  const lineas = String(texto || '').replace(/\r/g, '').split('\n');
+  let html = '', parrafo = [], lista = false;
+  const cerrarParrafo = () => { if (parrafo.length) { html += '<p>' + enLinea(parrafo.join('<br>')) + '</p>'; parrafo = []; } };
+  const cerrarLista = () => { if (lista) { html += '</ul>'; lista = false; } };
+  lineas.forEach(raw => {
+    const l = esc(raw.trim());
+    if (!l) { cerrarParrafo(); cerrarLista(); return; }
+    let m = l.match(/^#{1,6}\s+(.*)$/);
+    if (m) { cerrarParrafo(); cerrarLista(); html += '<h4>' + enLinea(m[1]) + '</h4>'; return; }
+    m = l.match(/^[-*•]\s+(.*)$/);
+    if (m) { cerrarParrafo(); if (!lista) { html += '<ul>'; lista = true; } html += '<li>' + enLinea(m[1]) + '</li>'; return; }
+    cerrarLista(); parrafo.push(l);
+  });
+  cerrarParrafo(); cerrarLista();
+  return html;
+}
+
+function extracto(texto){
+  const lineas = textoPlano(texto).replace(/\r/g, '').split('\n').map(l => l.trim());
+  const primera = lineas.find(l => l && !/^#{1,6}\s/.test(l)) || '';
+  const limpia = primera.replace(/[*_`]/g, '').replace(/^[-•]\s+/, '');
+  return limpia.length > 140 ? limpia.slice(0, 137).trimEnd() + '…' : limpia;
+}
+
+/* ---------- Datos ---------- */
+function construir(f, orden){
+  const titulo = f['titulo'] || f['título'] || '';
+  const enlace = urlSegura(f['enlace'] || f['url'] || '');
+  if (!titulo || !enlace) return null;
+  return {
+    titulo,
+    enlace,
+    tipo: normalizarTipo(f['tipo'], enlace),
+    fecha: parseFecha(f['fecha']),
+    descripcion: f['descripción'] || f['descripcion'] || '',
+    orden
+  };
+}
+
+function ordenar(lista){
+  return lista.sort((a, b) => {
+    const fa = a.fecha ? a.fecha.getTime() : -Infinity;
+    const fb = b.fecha ? b.fecha.getTime() : -Infinity;
+    if (fa !== fb) return fb - fa;
+    return b.orden - a.orden; /* a igual fecha, la fila más nueva de la hoja primero */
+  });
+}
+
+/* ---------- Pantalla ---------- */
+function visibles(){
+  const q = sinAcentos(textoBusqueda).trim();
+  return charlas.map((c, i) => ({ c, i })).filter(({ c }) =>
+    (filtroActivo === 'todas' || c.tipo === filtroActivo) &&
+    (!q || sinAcentos(c.titulo + ' ' + textoPlano(c.descripcion)).includes(q)));
+}
+
+function pintarContadores(){
+  const cuenta = { todas: charlas.length, YouTube: 0, MP3: 0, PDF: 0 };
+  charlas.forEach(c => cuenta[c.tipo]++);
+  document.querySelectorAll('[data-n]').forEach(el => { el.textContent = '(' + cuenta[el.dataset.n] + ')'; });
+}
+
+function pintar(){
+  const cont = $('charlas');
+  const lista = visibles();
+  if (!lista.length) {
+    cont.innerHTML = '<p class="estado">' + (charlas.length
+      ? 'No encontramos enseñanzas con ese filtro.'
+      : 'Todavía no hay enseñanzas publicadas — muy pronto iremos agregando contenido aquí.') + '</p>';
+    return;
+  }
+  cont.innerHTML = lista.map(({ c, i }) => {
+    const t = TIPOS[c.tipo];
+    const yt = c.tipo === 'YouTube' ? infoYouTube(c.enlace) : null;
+    const miniatura = yt
+      ? '<img src="https://img.youtube.com/vi/' + esc(yt.id) + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play">▶</span>'
+      : '<span>' + t.icono + '</span>';
+    const ext = extracto(c.descripcion);
+    return '<button type="button" class="charla tipo-' + c.tipo + '" data-i="' + i + '">' +
+      '<div class="miniatura">' + miniatura + '</div>' +
+      '<div class="cuerpo">' +
+        '<span class="etiqueta">' + t.icono + ' ' + t.etiqueta + '</span>' +
+        '<h3>' + esc(c.titulo) + '</h3>' +
+        (c.fecha ? '<span class="fecha-tarjeta">' + esc(formatFecha(c.fecha)) + '</span>' : '') +
+        (ext ? '<p class="extracto">' + esc(ext) + '</p>' : '') +
+      '</div></button>';
+  }).join('');
+}
+
+/* ---------- Ventana emergente ---------- */
+function abrir(i){
+  const c = charlas[i];
+  if (!c) return;
+  ultimoFoco = document.activeElement;
+  const t = TIPOS[c.tipo];
+  $('modalBadge').textContent = t.icono + ' ' + t.etiqueta;
+  $('modalTitulo').textContent = c.titulo;
+  $('modalFecha').textContent = c.fecha ? formatFecha(c.fecha) : '';
+  $('modalDesc').innerHTML = renderDescripcion(c.descripcion);
+
+  const media = $('modalMedia'), acciones = $('modalAcciones');
+  media.innerHTML = ''; acciones.innerHTML = '';
+
+  function boton(texto, href){
+    const a = document.createElement('a');
+    a.className = 'button'; a.textContent = texto; a.href = href;
+    a.target = '_blank'; a.rel = 'noopener noreferrer';
+    acciones.appendChild(a);
+  }
+
+  if (c.tipo === 'YouTube') {
+    const yt = infoYouTube(c.enlace);
+    if (yt) {
+      const wrap = document.createElement('div'); wrap.className = 'video-wrap';
+      const f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + yt.id + '?rel=0&modestbranding=1' + (yt.inicio ? '&start=' + yt.inicio : '');
+      f.title = c.titulo;
+      f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      f.allowFullscreen = true;
+      f.referrerPolicy = 'strict-origin-when-cross-origin';
+      wrap.appendChild(f); media.appendChild(wrap);
+    }
+    boton('▶ Ver en YouTube', c.enlace);
+  } else if (c.tipo === 'PDF') {
+    const wrap = document.createElement('div'); wrap.className = 'pdf-wrap';
+    const f = document.createElement('iframe');
+    f.src = c.enlace + (c.enlace.includes('#') ? '' : '#toolbar=1&navpanes=0');
+    f.title = c.titulo;
+    wrap.appendChild(f); media.appendChild(wrap);
+    boton('📄 Abrir PDF en otra pestaña', c.enlace);
+    const nota = document.createElement('p'); nota.className = 'nota-pdf';
+    nota.textContent = 'Si el documento no se ve aquí, usa el botón "Abrir PDF".';
+    acciones.after(nota); nota.dataset.temporal = '1';
+  } else {
+    const wrap = document.createElement('div'); wrap.className = 'audio-wrap';
+    const a = document.createElement('audio');
+    a.controls = true; a.preload = 'metadata'; a.src = c.enlace;
+    wrap.appendChild(a); media.appendChild(wrap);
+    boton('⬇ Abrir / descargar audio', c.enlace);
+  }
+
+  $('modal').classList.add('activo');
+  document.body.classList.add('modal-abierto');
+  $('modal').querySelector('.modal-caja').scrollTop = 0;
+  $('cerrar').focus();
+}
+
+function cerrar(){
+  if (!$('modal').classList.contains('activo')) return;
+  $('modal').classList.remove('activo');
+  document.body.classList.remove('modal-abierto');
+  $('modalMedia').innerHTML = '';            /* corta el video/audio que esté sonando */
+  document.querySelectorAll('.nota-pdf[data-temporal]').forEach(n => n.remove());
+  if (ultimoFoco && ultimoFoco.focus) ultimoFoco.focus();
+}
+
+/* ---------- Eventos ---------- */
+$('charlas').addEventListener('click', ev => {
+  const b = ev.target.closest('.charla');
+  if (b) abrir(+b.dataset.i);
+});
+$('cerrar').addEventListener('click', cerrar);
+$('modal').addEventListener('click', ev => { if (ev.target === $('modal')) cerrar(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') cerrar(); });
+$('filtros').addEventListener('click', ev => {
+  const chip = ev.target.closest('.chip');
+  if (!chip) return;
+  filtroActivo = chip.dataset.filtro;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('activo', c === chip));
+  pintar();
+});
+$('buscador').addEventListener('input', ev => { textoBusqueda = ev.target.value; pintar(); });
+
+/* ---------- Carga ---------- */
+async function cargar(){
+  try {
+    const r = await fetch(URL_ENSENANZA + '&_=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const filas = parseCSV(await r.text());
+    charlas = ordenar(filas.map(construir).filter(Boolean));
+    $('filtros').hidden = !charlas.length;
+    $('leyenda').hidden = !charlas.length;
+    pintarContadores();
+    pintar();
+  } catch (e) {
+    $('charlas').innerHTML = '<p class="estado">No se pudieron cargar las enseñanzas en este momento. Intenta de nuevo en unos minutos.</p>';
+    console.error(e);
+  }
+}
+cargar();
+</script>
+</body>
+</html>
